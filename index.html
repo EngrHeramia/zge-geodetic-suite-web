@@ -3,170 +3,164 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZGE Geodetic Suite — AutoCAD Automation &amp; Cadastral Tools</title>
+  <title>ZGE Complete Geodetic &amp; GIS Suite v7.0 — AutoCAD &amp; Civil 3D Tools</title>
   <style>
     :root {
-      --bg: #090d16; --surface: #111827; --surface-2: #182235;
-      --border: #243047; --text: #f1f5f9; --muted: #94a3b8;
-      --accent: #00d2ff; --accent-dark: #0284c7;
+      --bg: #070b14; --surface: #0f172a; --surface-elevated: #162036;
+      --border: #1e2d4a; --border-glow: rgba(0, 210, 255, 0.35);
+      --text: #f8fafc; --muted: #94a3b8; --accent: #00d2ff; --accent-2: #3b82f6;
       --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
-      --mono: "Consolas", "Courier New", monospace;
+      --mono: "Consolas", "JetBrains Mono", "Courier New", monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background-color: var(--bg);
       background-image:
+        radial-gradient(circle at 50% 0%, rgba(0, 210, 255, 0.09) 0%, transparent 55%),
         linear-gradient(to right, rgba(0, 210, 255, 0.03) 1px, transparent 1px),
         linear-gradient(to bottom, rgba(0, 210, 255, 0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
+      background-size: 100% 100%, 44px 44px, 44px 44px;
       color: var(--text); line-height: 1.6;
     }
     a { color: inherit; text-decoration: none; }
-    .container { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
-    header {
-      border-bottom: 1px solid var(--border);
-      background: rgba(9, 13, 22, 0.85); backdrop-filter: blur(10px);
-      position: sticky; top: 0; z-index: 50;
-    }
-    .nav { display: flex; justify-content: space-between; align-items: center; height: 68px; }
-    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.1rem; }
-    .brand-badge {
-      background: linear-gradient(135deg, var(--accent), var(--accent-dark));
-      color: #04101d; font-family: var(--mono); font-weight: 800;
-      padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;
-    }
-    .nav-links { display: flex; gap: 24px; font-size: 0.92rem; color: var(--muted); }
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 22px; }
+    header { border-bottom: 1px solid var(--border); background: rgba(7, 11, 20, 0.88); backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 100; }
+    .nav { display: flex; justify-content: space-between; align-items: center; height: 70px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; font-size: 1.15rem; }
+    .brand-badge { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #030a14; font-family: var(--mono); font-weight: 900; padding: 5px 10px; border-radius: 7px; font-size: 0.85rem; }
+    .nav-links { display: flex; gap: 28px; font-size: 0.92rem; font-weight: 500; color: var(--muted); }
     .nav-links a:hover { color: var(--accent); }
-    .hero { padding: 76px 0 56px; text-align: center; }
-    .version-pill {
-      display: inline-flex; align-items: center; gap: 8px;
-      background: var(--surface); border: 1px solid var(--border);
-      padding: 6px 14px; border-radius: 999px;
-      font-family: var(--mono); font-size: 0.82rem; color: var(--accent); margin-bottom: 20px;
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
-    h1 { font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
-    .hero p { max-width: 650px; margin: 0 auto 32px; color: var(--muted); font-size: 1.05rem; }
+    .hero { padding: 84px 0 64px; text-align: center; }
+    .status-pill { display: inline-flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); padding: 7px 16px; border-radius: 999px; font-family: var(--mono); font-size: 0.82rem; color: var(--accent); margin-bottom: 24px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 10px var(--success); }
+    h1 { font-size: clamp(2.1rem, 4.8vw, 3.4rem); font-weight: 800; line-height: 1.12; letter-spacing: -0.025em; margin-bottom: 18px; }
+    .gradient-text { background: linear-gradient(90deg, #ffffff 30%, var(--accent) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero-sub { max-width: 690px; margin: 0 auto 36px; color: var(--muted); font-size: 1.06rem; }
     .cta-group { display: flex; justify-content: center; gap: 14px; flex-wrap: wrap; }
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 13px 24px; border-radius: 8px; font-weight: 600; font-size: 0.95rem;
-      cursor: pointer; border: 1px solid transparent; transition: 0.2s ease;
-    }
-    .btn-primary { background: var(--accent); color: #04101d; }
-    .btn-primary:hover { background: #38dcff; transform: translateY(-1px); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 14px 26px; border-radius: 9px; font-weight: 700; font-size: 0.95rem; cursor: pointer; border: 1px solid transparent; transition: all 0.2s ease; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent), #22b8ff); color: #030a14; box-shadow: 0 6px 24px rgba(0, 210, 255, 0.22); }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 210, 255, 0.34); }
     .btn-secondary { background: var(--surface); border-color: var(--border); color: var(--text); }
     .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-    .release-note-box { max-width: 580px; margin: 22px auto 0; font-size: 0.85rem; color: var(--muted); }
-    section { padding: 48px 0; }
-    .section-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
-    .section-sub { color: var(--muted); font-size: 0.95rem; margin-bottom: 28px; }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; }
-    .card h3 { font-size: 1.05rem; margin-bottom: 8px; }
-    .card p { font-size: 0.9rem; color: var(--muted); }
-    .tag {
-      display: inline-block; font-family: var(--mono); font-size: 0.75rem;
-      color: var(--accent); background: rgba(0, 210, 255, 0.08);
-      padding: 3px 8px; border-radius: 4px; margin-bottom: 10px;
-    }
-    .checker-box {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: 14px; padding: 28px; max-width: 680px; margin: 0 auto;
-    }
-    .checker-form { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-    .checker-input {
-      flex: 1; min-width: 220px; background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); font-family: var(--mono); font-size: 0.95rem;
-      padding: 12px 14px; border-radius: 8px; text-transform: uppercase; outline: none;
-    }
+    .release-meta { margin-top: 22px; font-size: 0.85rem; color: var(--muted); font-family: var(--mono); }
+    section { padding: 54px 0; }
+    .section-header { margin-bottom: 32px; }
+    .section-title { font-size: 1.65rem; font-weight: 800; margin-bottom: 8px; }
+    .section-desc { color: var(--muted); font-size: 0.98rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(245px, 1fr)); gap: 20px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; transition: border-color 0.2s ease, transform 0.2s ease; }
+    .card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+    .card-tag { display: inline-block; font-family: var(--mono); font-size: 0.74rem; font-weight: 700; color: var(--accent); background: rgba(0, 210, 255, 0.09); padding: 4px 9px; border-radius: 5px; margin-bottom: 12px; }
+    .card h3 { font-size: 1.08rem; margin-bottom: 8px; }
+    .card p { font-size: 0.92rem; color: var(--muted); }
+    .checker-wrapper { background: linear-gradient(180deg, var(--surface) 0%, #0b1222 100%); border: 1px solid var(--border); border-radius: 16px; padding: 34px; max-width: 720px; margin: 0 auto; }
+    .checker-form { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+    .checker-input { flex: 1; min-width: 230px; background: var(--bg); border: 1px solid var(--border); color: var(--text); font-family: var(--mono); font-size: 1rem; padding: 13px 16px; border-radius: 9px; text-transform: uppercase; outline: none; }
     .checker-input:focus { border-color: var(--accent); }
-    .result-panel {
-      margin-top: 18px; padding: 16px; border-radius: 8px;
-      background: var(--surface-2); border: 1px solid var(--border); display: none; font-size: 0.9rem;
-    }
-    .result-row {
-      display: flex; justify-content: space-between; padding: 6px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05);
-    }
+    .result-box { margin-top: 22px; padding: 18px; border-radius: 10px; background: var(--surface-elevated); border: 1px solid var(--border); display: none; }
+    .result-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.06); font-size: 0.92rem; }
     .result-row:last-child { border-bottom: none; }
-    .status-badge { font-family: var(--mono); font-weight: 700; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; }
-    .status-active { background: rgba(16, 185, 129, 0.15); color: var(--success); }
-    .status-blocked { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
-    .status-info { background: rgba(245, 158, 11, 0.15); color: var(--warning); }
-    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
-    .step-num { font-family: var(--mono); font-size: 0.85rem; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
-    footer { border-top: 1px solid var(--border); padding: 28px 0; margin-top: 40px; text-align: center; color: var(--muted); font-size: 0.85rem; }
-    @media (max-width: 640px) { .nav-links { display: none; } }
+    .badge { font-family: var(--mono); font-weight: 800; font-size: 0.78rem; padding: 3px 9px; border-radius: 5px; }
+    .badge-active { background: rgba(16, 185, 129, 0.16); color: var(--success); }
+    .badge-blocked { background: rgba(239, 68, 68, 0.16); color: var(--danger); }
+    .badge-warn { background: rgba(245, 158, 11, 0.16); color: var(--warning); }
+    .step-num { font-family: var(--mono); font-size: 0.82rem; font-weight: 800; color: var(--accent); margin-bottom: 8px; }
+    code { font-family: var(--mono); background: rgba(255, 255, 255, 0.06); padding: 2px 6px; border-radius: 4px; font-size: 0.85em; color: #e2e8f0; }
+    footer { border-top: 1px solid var(--border); padding: 32px 0; margin-top: 48px; text-align: center; color: var(--muted); font-size: 0.86rem; }
+    @media (max-width: 640px) { .nav-links { display: none; } .checker-wrapper { padding: 24px 18px; } }
   </style>
 </head>
 <body>
   <header>
     <div class="container nav">
-      <div class="brand"><span class="brand-badge">ZGE</span><span>Geodetic Suite</span></div>
+      <div class="brand"><span class="brand-badge">ZGE</span><span>Complete Geodetic &amp; GIS Suite</span></div>
       <nav class="nav-links">
-        <a href="#features">Features</a>
-        <a href="#license-check">License Checker</a>
-        <a href="#install">Installation</a>
+        <a href="#features">Capabilities</a>
+        <a href="#license-check">License Portal</a>
+        <a href="#install">Install Guide</a>
       </nav>
     </div>
   </header>
 
   <main class="container">
     <section class="hero">
-      <div class="version-pill"><span class="dot" id="statusDot"></span><span id="versionLabel">Latest Release: v1.0.0</span></div>
-      <h1>Precision AutoCAD Tools for Geodetic Engineers</h1>
-      <p>Automate lot plotting, technical descriptions, traverse computations, and cadastral drafting inside AutoCAD—secured with Ironclad Cloud Licensing.</p>
+      <div class="status-pill"><span class="status-dot" id="statusDot"></span><span id="versionLabel">Latest Build: v7.0.0 Ironclad</span></div>
+      <h1><span class="gradient-text">84 Precision AutoCAD Commands</span><br />for Philippine Geodetic Engineers</h1>
+      <p class="hero-sub">
+        Accelerate PRS92/Luzon 1911 plotting, cadastral subdivision, DENR-LMB eSurvey XML, RTK/QGIS workflows, and print-ready survey returns inside AutoCAD &amp; Civil 3D (2013&ndash;2026) — 100% offline-first.
+      </p>
       <div class="cta-group">
-        <a id="downloadBtn" href="#" target="_blank" rel="noopener" class="btn btn-primary">Download Latest Build</a>
-        <a href="#license-check" class="btn btn-secondary">Verify License Key</a>
+        <a id="downloadBtn" href="#" target="_blank" rel="noopener noreferrer" class="btn btn-primary">Download Latest Release</a>
+        <a href="#license-check" class="btn btn-secondary">Verify License Status</a>
       </div>
-      <div class="release-note-box" id="releaseNotesText">Release Notes: Initial production build with Ironclad 5-Factor HWID protection.</div>
+      <div class="release-meta" id="releaseNotesText">Release Notes: v7.0 Ironclad — 84 Commands, 5-Factor HWID, Zero-Upload Offline Privacy.</div>
     </section>
 
     <section id="features">
-      <h2 class="section-title">Engineered for Speed &amp; Field Reliability</h2>
-      <p class="section-sub">Built to eliminate repetitive drafting while keeping your license portable across field work.</p>
-      <div class="grid">
-        <div class="card"><span class="tag">AUTOCAD CORE</span><h3>Automated Lot &amp; Traverse Plotting</h3><p>Generate bearings, distances, tie lines, and technical description tables directly in model space with zero manual input errors.</p></div>
-        <div class="card"><span class="tag">IRONCLAD SECURITY</span><h3>5-Factor Hardware Binding</h3><p>Each license binds securely to your workstation with 1 automatic free same-PC re-issue for Windows reformats or SSD upgrades.</p></div>
-        <div class="card"><span class="tag">FIELD READY</span><h3>72-Hour Offline Grace Mode</h3><p>Continue working in remote survey sites or LGU offices without internet for up to 3 days between cloud license syncs.</p></div>
-        <div class="card"><span class="tag">SEAMLESS UPDATES</span><h3>Backward-Compatible Releases</h3><p>Upgrade to newer ZGE versions anytime using your existing license key—no re-activation required on the same PC.</p></div>
+      <div class="section-header">
+        <h2 class="section-title">Built for Philippine Cadastral Accuracy &amp; Total Privacy</h2>
+        <p class="section-desc">Engineered by Wendell Heramia for DENR-LMB, LRA, Assessor, and private surveying practices.</p>
+      </div>
+      <div class="grid-4">
+        <div class="card">
+          <span class="card-tag">84 COMMANDS</span>
+          <h3>End-to-End Survey Automation</h3>
+          <p>Paste-to-plot TCTs, traverse adjustment, parallel/hinge/RROW subdivision, DENR-LMB XML, RTK/KML, and print-ready return dossiers.</p>
+        </div>
+        <div class="card">
+          <span class="card-tag">100% OFFLINE-FIRST</span>
+          <h3>Zero Field Lockouts &amp; VIP Privacy</h3>
+          <p>Works indefinitely offline in remote survey sites — zero TCTs, lot coordinates, or DWG drawings ever leave your workstation.</p>
+        </div>
+        <div class="card">
+          <span class="card-tag">IRONCLAD V7</span>
+          <h3>5-Factor Hardware Protection</h3>
+          <p>Compiled Separate-Namespace VLX binary with opaque 80-bit encrypted tokens bound to your workstation.</p>
+        </div>
+        <div class="card">
+          <span class="card-tag">SEAMLESS UPDATES</span>
+          <h3>Keep Your Key Across Upgrades</h3>
+          <p>Replace your ZGE VLX binary whenever a new build ships — your existing <code>Z6-...</code> license stays active automatically.</p>
+        </div>
       </div>
     </section>
 
     <section id="license-check">
-      <div class="checker-box">
-        <h2 class="section-title">License &amp; Re-Issue Status Checker</h2>
-        <p class="section-sub" style="margin-bottom: 0;">Enter your ZGE license key to verify activation status, tier, and available same-PC re-issue credits.</p>
+      <div class="checker-wrapper">
+        <h2 class="section-title">License Status Portal</h2>
+        <p class="section-desc">Check your registered ZGE Suite v7.0 license status and plan tier.</p>
         <form class="checker-form" id="licenseForm">
-          <input type="text" id="licenseInput" class="checker-input" placeholder="ZGE-XXXX-XXXX-XXXX" maxlength="24" required />
-          <button type="submit" class="btn btn-primary" id="checkBtn">Check Status</button>
+          <input type="text" id="licenseInput" class="checker-input" placeholder="Z6-XXXX-XXXX-XXXX-XXXX" maxlength="32" required />
+          <button type="submit" class="btn btn-primary" id="checkBtn">Verify Key</button>
         </form>
-        <div class="result-panel" id="resultPanel"></div>
+        <div class="result-box" id="resultBox"></div>
       </div>
     </section>
 
     <section id="install">
-      <h2 class="section-title">Quick Installation Guide</h2>
-      <p class="section-sub">How to install or update ZGE Geodetic Suite on your Windows workstation.</p>
-      <div class="steps">
-        <div class="card"><div class="step-num">STEP 01</div><h3>Download Release ZIP</h3><p>Click <strong>Download Latest Build</strong> above to get the official encrypted client package from GitHub Releases.</p></div>
-        <div class="card"><div class="step-num">STEP 02</div><h3>Extract to Local Drive</h3><p>Extract the archive to a permanent folder such as <code>C:\ZGE_Suite</code>.</p></div>
-        <div class="card"><div class="step-num">STEP 03</div><h3>Load in AutoCAD</h3><p>Run the included loader or use <code>NETLOAD</code> / <code>APPLOAD</code> inside AutoCAD to initialize the ZGE Geodetic Suite ribbon.</p></div>
-        <div class="card"><div class="step-num">STEP 04</div><h3>Activate Once</h3><p>Paste your <code>ZGE-XXXX-XXXX-XXXX</code> license key when prompted. Future updates on the same PC recognize your license automatically.</p></div>
+      <div class="section-header">
+        <h2 class="section-title">2-Minute AutoCAD &amp; Civil 3D Setup</h2>
+        <p class="section-desc">Compatible with AutoCAD &amp; AutoCAD Civil 3D 2013 through 2026.</p>
+      </div>
+      <div class="grid-4">
+        <div class="card"><div class="step-num">STEP 01</div><h3>Download &amp; Extract</h3><p>Download your official ZGE Suite release ZIP and extract the <code>ZGE_Suite.bundle</code> folder.</p></div>
+        <div class="card"><div class="step-num">STEP 02</div><h3>Copy to ApplicationPlugins</h3><p>Place <code>ZGE_Suite.bundle</code> into <code>%ProgramData%\Autodesk\ApplicationPlugins\</code> (or <code>%AppData%\Autodesk\ApplicationPlugins\</code>).</p></div>
+        <div class="card"><div class="step-num">STEP 03</div><h3>Restart AutoCAD</h3><p>Launch AutoCAD or Civil 3D — the ZGE Suite VLX binary and toolbars auto-load cleanly.</p></div>
+        <div class="card"><div class="step-num">STEP 04</div><h3>Activate Once</h3><p>Type <code>ZGEACT</code>, enter your <code>Z6-...</code> key once, then type <code>ZGE</code> to open the 84-Command Control Center.</p></div>
       </div>
     </section>
   </main>
 
-  <footer><div class="container">&copy; <span id="year"></span> ZGE Geodetic Suite. Protected by Ironclad Cloud Licensing.</div></footer>
+  <footer>
+    <div class="container">&copy; <span id="year"></span> Wendell Heramia &bull; ZGE Complete Geodetic &amp; GIS Suite v7.0 Ironclad</div>
+  </footer>
 
   <script>
     const CONFIG = {
-      WORKER_URL: "https://zge-license-api.YOUR-SUBDOMAIN.workers.dev",
-      FALLBACK_VERSION: "1.0.0",
-      FALLBACK_DOWNLOAD_URL: "https://github.com/YOUR-USERNAME/zge-geodetic-suite-web/releases"
+      WORKER_URL: "https://zge-license-api.zwell.workers.dev",
+      FALLBACK_DOWNLOAD_URL: "https://github.com/EngrHeramia/zge-geodetic-suite-web/releases"
     };
 
     document.getElementById("year").textContent = new Date().getFullYear();
@@ -177,44 +171,48 @@
     const statusDot = document.getElementById("statusDot");
     downloadBtn.href = CONFIG.FALLBACK_DOWNLOAD_URL;
 
-    async function loadPublicStatus() {
+    function isSafeHttps(u) {
+      return typeof u === "string" && u.startsWith("https://");
+    }
+
+    async function syncPublicStatus() {
       if (!isConfigured) return;
       try {
         const res = await fetch(`${CONFIG.WORKER_URL}/api/v1/public/status`);
         const data = await res.json();
         if (data.ok) {
-          versionLabel.textContent = `Latest Release: v${data.latest_version}`;
-          if (data.download_url) downloadBtn.href = data.download_url;
+          versionLabel.textContent = `Latest Build: v${data.latest_version}`;
+          if (isSafeHttps(data.download_url)) downloadBtn.href = data.download_url;
           if (data.release_notes) releaseNotesText.textContent = `Release Notes: ${data.release_notes}`;
           if (data.maintenance_mode) {
             statusDot.style.background = "var(--warning)";
-            statusDot.style.boxShadow = "0 0 8px var(--warning)";
-            versionLabel.textContent = "Server Maintenance in Progress";
+            statusDot.style.boxShadow = "0 0 10px var(--warning)";
+            versionLabel.textContent = "Maintenance Mode Active";
           }
         }
-      } catch (err) { console.warn("Fallback release info active:", err); }
+      } catch (err) {
+        console.warn("Using fallback release metadata:", err);
+      }
     }
-    loadPublicStatus();
+    syncPublicStatus();
 
     const licenseForm = document.getElementById("licenseForm");
     const licenseInput = document.getElementById("licenseInput");
-    const resultPanel = document.getElementById("resultPanel");
+    const resultBox = document.getElementById("resultBox");
     const checkBtn = document.getElementById("checkBtn");
 
     licenseForm.addEventListener("submit", async (e) => {
       e.preventDefault();
       const key = licenseInput.value.trim().toUpperCase();
       if (!key) return;
-      resultPanel.style.display = "block";
-      resultPanel.innerHTML = "";
-
+      resultBox.style.display = "block";
+      resultBox.innerHTML = "";
       if (!isConfigured) {
-        addResultRow("System Notice", "Cloudflare Worker URL not yet linked in index.html.", "status-info");
+        appendRow("Configuration Notice", "Link WORKER_URL inside index.html to enable live checks.", "badge-warn");
         return;
       }
-
       checkBtn.disabled = true;
-      checkBtn.textContent = "Checking...";
+      checkBtn.textContent = "Verifying...";
       try {
         const res = await fetch(`${CONFIG.WORKER_URL}/api/v1/public/check-license`, {
           method: "POST",
@@ -223,36 +221,34 @@
         });
         const data = await res.json();
         if (!data.ok) {
-          addResultRow("Result", data.error || "License key not found.", "status-blocked");
+          appendRow("Verification Result", data.error || "License key not found.", "badge-blocked");
         } else {
-          const badgeClass = data.status === "ACTIVE" ? "status-active" : "status-blocked";
-          addResultRow("License Status", data.status, badgeClass);
-          addResultRow("Registered To", data.client_name);
-          addResultRow("Plan Tier", data.tier);
-          addResultRow("Free Same-PC Re-Issue", data.free_same_pc_reissue_available ? "Available (1/1)" : "Used (Paid Transfer Required)", data.free_same_pc_reissue_available ? "status-active" : "status-info");
-          addResultRow("Expiration", data.expires_at ? data.expires_at : "Lifetime License");
+          appendRow("Status", data.status, data.status === "ACTIVE" ? "badge-active" : "badge-blocked");
+          appendRow("Licensed To", data.client_name);
+          appendRow("Plan Tier", data.tier);
+          appendRow("Validity", data.expires_at ? data.expires_at : "Lifetime License");
         }
       } catch (err) {
-        addResultRow("Connection Error", "Unable to reach license server. Try again later.", "status-blocked");
+        appendRow("Network Error", "Could not reach license server. Please try again.", "badge-blocked");
       } finally {
         checkBtn.disabled = false;
-        checkBtn.textContent = "Check Status";
+        checkBtn.textContent = "Verify Key";
       }
     });
 
-    function addResultRow(label, value, badgeClass = "") {
+    function appendRow(label, value, badgeClass = "") {
       const row = document.createElement("div");
       row.className = "result-row";
-      const labelEl = document.createElement("span");
-      labelEl.style.color = "var(--muted)";
-      labelEl.textContent = label;
-      const valEl = document.createElement("span");
-      if (badgeClass) valEl.className = `status-badge ${badgeClass}`;
-      else valEl.style.fontFamily = "var(--mono)";
-      valEl.textContent = value;
-      row.appendChild(labelEl);
-      row.appendChild(valEl);
-      resultPanel.appendChild(row);
+      const left = document.createElement("span");
+      left.style.color = "var(--muted)";
+      left.textContent = label;
+      const right = document.createElement("span");
+      if (badgeClass) right.className = `badge ${badgeClass}`;
+      else { right.style.fontFamily = "var(--mono)"; right.style.fontWeight = "600"; }
+      right.textContent = value;
+      row.appendChild(left);
+      row.appendChild(right);
+      resultBox.appendChild(row);
     }
   </script>
 </body>
