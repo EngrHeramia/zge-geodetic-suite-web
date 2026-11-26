@@ -642,10 +642,28 @@
               </select>
             </div>
             <input type="text" id="inqHwid" class="portal-input" placeholder="Optional Machine ID (ZGE-XXXX-XXXX-XXXX) — leave blank if none yet" maxlength="24" />
+            <input type="text" id="inqHp" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" />
             <input type="text" id="inqNotes" class="portal-input" style="text-transform:none;" placeholder="Optional message or question (do NOT paste TCT/DWG data here)" maxlength="250" />
             <button type="submit" class="btn btn-brass" id="inqBtn">Submit Inquiry &amp; Get Reference Code</button>
           </form>
           <div class="result-box" id="inqResultBox"></div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- Live Real-Time Order / Ticket Progress Tracker -->
+    <section id="track-order" class="block" style="background: var(--bg-alt);">
+      <div class="container reveal">
+        <div class="sec-kicker">Real-Time Client Transparency</div>
+        <h2 class="sec-title">Track Your Inquiry &amp; License Progress</h2>
+        <p class="sec-sub">Enter your <code>INQ-XXXXXX</code> Reference Code to see live updates as Wendell verifies your request and prepares your protected ZGE package.</p>
+        <div class="portal-card">
+          <form class="portal-form" id="trackForm" style="margin-top:0;">
+            <input type="text" id="trackInput" class="portal-input" placeholder="INQ-XXXXXX" maxlength="16" required />
+            <button type="submit" class="btn btn-brass" id="trackBtn">Track Progress</button>
+          </form>
+          <div id="trackResult" class="result-box"></div>
         </div>
       </div>
     </section>
@@ -721,12 +739,15 @@
     const CONFIG = {
       PUBLIC_TESTING_MODE: true, // Keep true so NO real file is released while testing!
       WORKER_URL: "https://zge-license-api.zwell.workers.dev",
-      DISCORD_INVITE_URL: "https://discord.gg/pfGNGcZVjW", 
-      DISCORD_HANDLE: "zwell04",
-      FACEBOOK_URL: "https://www.facebook.com/zwellge"
+      DISCORD_INVITE_URL: "https://discord.gg/pfGNGcZVjW",    // Paste your real https://discord.gg/XXXX invite link here
+      DISCORD_HANDLE: "zwell04", // Replace with your exact Discord username
+      FACEBOOK_URL: "https://www.facebook.com/zwellge" // Paste your official Facebook Page / Messenger link (e.g. https://m.me/yourpage)
     };
 
     document.getElementById("year").textContent = new Date().getFullYear();
+    if (CONFIG.PUBLIC_TESTING_MODE) {
+      document.querySelectorAll('#license-portal, a[href="#license-portal"]').forEach(el => { el.style.display = "none"; });
+    }
 
     // Mobile Menu
     const menuToggle = document.getElementById("menuToggle");
@@ -896,6 +917,72 @@
     });
 
 
+
+    // Live Order / Ticket Progress Tracker (INQ-XXXXXX)
+    const trackForm = document.getElementById("trackForm");
+    const trackInput = document.getElementById("trackInput");
+    const trackResult = document.getElementById("trackResult");
+    const trackBtn = document.getElementById("trackBtn");
+    const STAGES = ["Received", "Verifying", "Building License", "Ready", "Completed"];
+
+    if (trackForm) {
+      trackForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const ref = trackInput.value.trim().toUpperCase();
+        if (!ref) return;
+        trackResult.style.display = "block";
+        trackResult.innerHTML = "";
+        trackBtn.disabled = true;
+        trackBtn.textContent = "Checking...";
+        try {
+          const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/track-inquiry?ref=" + encodeURIComponent(ref));
+          const d = await res.json();
+          if (!d.ok) {
+            const p = document.createElement("div");
+            p.className = "status-tag st-bad";
+            p.textContent = d.error || "Reference code not found.";
+            trackResult.appendChild(p);
+          } else {
+            const head = document.createElement("div");
+            head.className = "result-row";
+            const hl = document.createElement("span");
+            hl.textContent = d.ref_code + " • " + d.client_name + " (" + d.plan_tier + ")";
+            hl.style.fontWeight = "600";
+            const hr = document.createElement("span");
+            hr.className = "status-tag " + (d.status === "BLOCKED" ? "st-bad" : (d.progress_stage >= 4 ? "st-ok" : "st-warn"));
+            hr.textContent = d.status.replace(/_/g, " ");
+            head.appendChild(hl); head.appendChild(hr);
+            trackResult.appendChild(head);
+
+            if (d.status !== "BLOCKED") {
+              const barWrap = document.createElement("div");
+              barWrap.style.cssText = "display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:14px 0 10px;";
+              STAGES.forEach((lbl, idx) => {
+                const step = document.createElement("div");
+                const done = (idx + 1) <= d.progress_stage;
+                step.style.cssText = "text-align:center;padding:6px 4px;border-radius:6px;font-family:var(--mono);font-size:0.7rem;border:1px solid " +
+                  (done ? "var(--emerald)" : "var(--border)") + ";background:" +
+                  (done ? "var(--emerald-soft)" : "var(--bg)") + ";color:" + (done ? "var(--emerald)" : "var(--text-muted)") + ";";
+                step.textContent = (idx + 1) + ". " + lbl;
+                barWrap.appendChild(step);
+              });
+              trackResult.appendChild(barWrap);
+            }
+
+            const note = document.createElement("div");
+            note.style.cssText = "font-size:0.84rem;color:var(--text-dim);margin-top:6px;";
+            note.textContent = "Latest Update: " + d.status_note;
+            trackResult.appendChild(note);
+          }
+        } catch (_) {
+          trackResult.textContent = "Network error reaching tracker.";
+        } finally {
+          trackBtn.disabled = false;
+          trackBtn.textContent = "Track Progress";
+        }
+      });
+    }
+
     // Hybrid Website Inquiry Form
     const inquiryForm = document.getElementById("inquiryForm");
     const inqResultBox = document.getElementById("inqResultBox");
@@ -914,7 +1001,8 @@
           plan_tier: document.getElementById("inqTier").value,
           payment_method: document.getElementById("inqPay").value,
           hwid_submitted: document.getElementById("inqHwid").value.trim().toUpperCase(),
-          notes: document.getElementById("inqNotes").value.trim()
+          notes: document.getElementById("inqNotes").value.trim(),
+          website_hp: (document.getElementById("inqHp") ? document.getElementById("inqHp").value : "")
         };
         try {
           const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/inquiry", {
