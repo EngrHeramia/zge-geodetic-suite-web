@@ -1,1272 +1,573 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ZGE Complete Geodetic &amp; GIS Suite v7.0 — Precision AutoCAD &amp; Civil 3D Automation</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      --bg: #070a0f;
-      --bg-alt: #0b1018;
-      --surface: #101622;
-      --surface-2: #151d2c;
-      --border: #1f2a3d;
-      --border-strong: #2d3c57;
-      --text: #f1f5f9;
-      --text-dim: #94a3b8;
-      --text-muted: #64748b;
-      --brass: #d4a353;
-      --brass-soft: rgba(212, 163, 83, 0.14);
-      --cyan: #38bdf8;
-      --cyan-soft: rgba(56, 189, 248, 0.12);
-      --emerald: #10b981;
-      --emerald-soft: rgba(16, 185, 129, 0.14);
-      --danger: #f43f5e;
-      --danger-soft: rgba(244, 63, 94, 0.14);
-      --discord: #5865F2;
-      --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      --mono: "JetBrains Mono", "Consolas", monospace;
-    }
+// ZGE Complete Geodetic & GIS Suite v7.0 Ironclad — Hardened Cloudflare Worker
+// Author: Wendell Heramia | Option 1 (Offline-First Z6 Hardware Tokens + Cloud Monitor/Updates/Portal)
+// Fixes: constant-time ADMIN_SECRET auth (never accepts undefined), strict input validation,
+//        rate limiting on public endpoints, deduplicated D1 heartbeats, HTTPS URL validation,
+//        and native /version.json + /api/heartbeat compatibility with ZGE_License.lsp v7.0.
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html { scroll-behavior: smooth; }
-    body {
-      font-family: var(--sans);
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.6;
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
+const KEY_RE  = /^(Z6-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}|ZGE-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})$/;
+const HWID_RE = /^ZGE-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/;
+const VALID_STATUSES = new Set(["ACTIVE", "SUSPENDED", "REVOKED"]);
+const VALID_TIERS = new Set(["STANDARD", "PRO", "ENTERPRISE"]);
 
-    /* Subtle topographic grid backdrop */
-    .grid-bg {
-      background-image:
-        linear-gradient(to right, rgba(148, 163, 184, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(148, 163, 184, 0.04) 1px, transparent 1px);
-      background-size: 48px 48px;
-    }
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url);
+    const path = url.pathname;
 
-    a { color: inherit; text-decoration: none; }
-    .container { max-width: 1140px; margin: 0 auto; padding: 0 24px; }
-
-    /* Top Telemetry Bar */
-    .top-bar {
-      background: #05070b;
-      border-bottom: 1px solid var(--border);
-      font-family: var(--mono);
-      font-size: 0.75rem;
-      color: var(--text-dim);
-    }
-    .top-bar-inner {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 0;
-      flex-wrap: wrap;
-    }
-    .top-bar-left { display: flex; align-items: center; gap: 10px; }
-    .live-dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      background: var(--brass);
-      box-shadow: 0 0 0 3px rgba(212, 163, 83, 0.22);
-      animation: pulse-dot 2.4s infinite;
-    }
-    @keyframes pulse-dot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.55; transform: scale(0.92); }
-    }
-
-    /* Header */
-    header {
-      position: sticky; top: 0; z-index: 90;
-      background: rgba(7, 10, 15, 0.86);
-      backdrop-filter: blur(14px);
-      border-bottom: 1px solid var(--border);
-    }
-    .nav {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      height: 68px;
-      gap: 16px;
-    }
-    .brand {
-      display: flex; align-items: center; gap: 12px;
-      font-weight: 700; font-size: 1rem; letter-spacing: -0.01em;
-    }
-    .brand-mark {
-      width: 34px; height: 34px; border-radius: 8px;
-      background: var(--surface-2);
-      border: 1px solid var(--brass);
-      display: grid; place-items: center;
-      font-family: var(--mono); font-weight: 700; font-size: 0.8rem;
-      color: var(--brass);
-    }
-    .brand-sub {
-      display: block; font-size: 0.7rem; font-weight: 500;
-      color: var(--text-muted); font-family: var(--mono);
-    }
-    .nav-links {
-      display: flex; align-items: center; gap: 26px;
-      font-size: 0.88rem; font-weight: 500; color: var(--text-dim);
-    }
-    .nav-links a { transition: color 0.18s ease; }
-    .nav-links a:hover { color: var(--text); }
-    .menu-toggle {
-      display: none; background: var(--surface); border: 1px solid var(--border);
-      color: var(--text); padding: 8px 12px; border-radius: 8px;
-      font-family: var(--mono); font-size: 0.8rem; cursor: pointer;
-    }
-    .mobile-nav {
-      display: none; flex-direction: column; gap: 12px;
-      padding: 16px 24px 20px; border-bottom: 1px solid var(--border);
-      background: var(--bg-alt);
-    }
-    .mobile-nav.open { display: flex; }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 12px 22px; border-radius: 9px;
-      font-weight: 600; font-size: 0.9rem; cursor: pointer;
-      border: 1px solid transparent; transition: all 0.2s cubic-bezier(0.22, 1, 0.36, 1);
-      white-space: nowrap;
-    }
-    .btn-brass {
-      background: var(--brass); color: #090c10;
-    }
-    .btn-brass:hover { background: #e3b464; transform: translateY(-1px); }
-    .btn-outline {
-      background: var(--surface); border-color: var(--border-strong); color: var(--text);
-    }
-    .btn-outline:hover { border-color: var(--brass); color: var(--brass); }
-    .btn-discord {
-      background: var(--discord); color: #ffffff;
-    }
-    .btn-discord:hover { background: #4752c4; transform: translateY(-1px); }
-    .btn-sm { padding: 8px 14px; font-size: 0.82rem; border-radius: 7px; }
-
-    /* Hero */
-    .hero {
-      padding: 72px 0 64px;
-      border-bottom: 1px solid var(--border);
-      position: relative;
-    }
-    .hero-grid {
-      display: grid;
-      grid-template-columns: 1.12fr 0.88fr;
-      gap: 44px;
-      align-items: center;
-    }
-    .eyebrow {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 5px 12px; border-radius: 6px;
-      background: var(--brass-soft);
-      border: 1px solid rgba(212, 163, 83, 0.32);
-      color: var(--brass);
-      font-family: var(--mono); font-size: 0.76rem; font-weight: 600;
-      margin-bottom: 20px;
-    }
-    h1 {
-      font-size: clamp(2.1rem, 4.2vw, 3.25rem);
-      font-weight: 800; line-height: 1.1; letter-spacing: -0.03em;
-      margin-bottom: 18px;
-    }
-    h1 span { color: var(--brass); }
-    .hero-lead {
-      color: var(--text-dim); font-size: 1.02rem; max-width: 560px;
-      margin-bottom: 28px;
-    }
-    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 28px; }
-    .hero-metrics {
-      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 14px; padding-top: 22px; border-top: 1px solid var(--border);
-    }
-    .metric-val {
-      font-family: var(--mono); font-size: 1.25rem; font-weight: 700; color: var(--text);
-    }
-    .metric-lbl { font-size: 0.78rem; color: var(--text-muted); }
-
-    /* Interactive Cadastral Instrument Panel */
-    .instrument-card {
-      background: var(--surface);
-      border: 1px solid var(--border-strong);
-      border-radius: 14px;
-      overflow: hidden;
-      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
-    }
-    .instrument-head {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px; background: #0c111b; border-bottom: 1px solid var(--border);
-      font-family: var(--mono); font-size: 0.74rem; color: var(--text-dim);
-    }
-    .instrument-head strong { color: var(--brass); font-weight: 600; }
-    .canvas-wrap {
-      position: relative; height: 320px; width: 100%; background: #070b12;
-      cursor: crosshair;
-    }
-    #surveyCanvas { display: block; width: 100%; height: 100%; }
-    .coord-hud {
-      position: absolute; bottom: 10px; left: 10px; right: 10px;
-      display: flex; justify-content: space-between; align-items: center; gap: 8px;
-      background: rgba(7, 10, 15, 0.84); border: 1px solid var(--border);
-      padding: 6px 10px; border-radius: 7px;
-      font-family: var(--mono); font-size: 0.72rem; color: var(--text-dim);
-      pointer-events: none;
-    }
-    .coord-hud b { color: var(--cyan); font-weight: 600; }
-    .instrument-foot {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 10px 14px; background: #0c111b; border-top: 1px solid var(--border);
-      font-family: var(--mono); font-size: 0.74rem; color: var(--text-muted);
-    }
-
-    /* Sections */
-    section.block { padding: 72px 0; border-bottom: 1px solid var(--border); }
-    .sec-kicker {
-      font-family: var(--mono); font-size: 0.76rem; font-weight: 600;
-      color: var(--brass); text-transform: uppercase; letter-spacing: 0.08em;
-      margin-bottom: 8px;
-    }
-    .sec-title {
-      font-size: clamp(1.5rem, 2.8vw, 2.05rem); font-weight: 800;
-      letter-spacing: -0.02em; margin-bottom: 10px;
-    }
-    .sec-sub { color: var(--text-dim); max-width: 660px; margin-bottom: 34px; font-size: 0.96rem; }
-
-    /* Cards & Grids */
-    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 24px;
-      transition: border-color 0.2s ease, transform 0.2s ease;
-    }
-    .card:hover { border-color: var(--border-strong); transform: translateY(-2px); }
-    .card-code {
-      font-family: var(--mono); font-size: 0.74rem; font-weight: 600;
-      color: var(--cyan); background: var(--cyan-soft);
-      display: inline-block; padding: 3px 8px; border-radius: 5px; margin-bottom: 12px;
-    }
-    .card h3 { font-size: 1.05rem; margin-bottom: 8px; font-weight: 700; }
-    .card p { font-size: 0.9rem; color: var(--text-dim); }
-
-    /* Command Explorer */
-    .filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 22px; }
-    .filter-btn {
-      background: var(--surface); border: 1px solid var(--border);
-      color: var(--text-dim); padding: 7px 14px; border-radius: 7px;
-      font-family: var(--mono); font-size: 0.78rem; cursor: pointer;
-      transition: all 0.16s ease;
-    }
-    .filter-btn:hover { border-color: var(--border-strong); color: var(--text); }
-    .filter-btn.active {
-      background: var(--brass-soft); border-color: var(--brass); color: var(--brass);
-    }
-    .cmd-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
-      gap: 12px;
-    }
-    .cmd-item {
-      background: var(--bg-alt); border: 1px solid var(--border);
-      border-radius: 9px; padding: 12px 14px;
-    }
-    .cmd-name { font-family: var(--mono); font-size: 0.84rem; font-weight: 700; color: var(--brass); }
-    .cmd-desc { font-size: 0.8rem; color: var(--text-dim); margin-top: 3px; }
-
-    /* Partner Banner (DroidRTS) */
-    .partner-box {
-      background: linear-gradient(135deg, var(--surface) 0%, #111b2b 100%);
-      border: 1px solid var(--border-strong);
-      border-radius: 14px; padding: 28px 32px;
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 24px; flex-wrap: wrap;
-    }
-    .partner-meta { max-width: 640px; }
-    .partner-pill {
-      display: inline-block; font-family: var(--mono); font-size: 0.72rem;
-      color: var(--emerald); background: var(--emerald-soft);
-      padding: 3px 9px; border-radius: 5px; margin-bottom: 10px;
-    }
-
-    /* Payment Cards */
-    .pay-badge {
-      display: inline-flex; align-items: center; gap: 6px;
-      font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
-      padding: 4px 10px; border-radius: 6px; margin-bottom: 12px;
-    }
-    .pay-gcash { background: rgba(0, 125, 254, 0.16); color: #60a5fa; }
-    .pay-maya  { background: rgba(16, 185, 129, 0.16); color: #34d399; }
-    .pay-bank  { background: rgba(212, 163, 83, 0.16); color: var(--brass); }
-    .notice-strip {
-      margin-top: 20px; padding: 14px 18px; border-radius: 10px;
-      background: var(--surface); border: 1px dashed var(--border-strong);
-      font-size: 0.86rem; color: var(--text-dim);
-    }
-
-    /* License Portal */
-    .portal-card {
-      background: var(--surface); border: 1px solid var(--border-strong);
-      border-radius: 14px; padding: 30px; max-width: 740px;
-    }
-    .portal-form { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
-    .portal-input {
-      flex: 1; min-width: 220px; background: var(--bg);
-      border: 1px solid var(--border-strong); color: var(--text);
-      font-family: var(--mono); font-size: 0.96rem;
-      padding: 12px 15px; border-radius: 9px; text-transform: uppercase;
-      outline: none;
-    }
-    .portal-input:focus { border-color: var(--brass); }
-    .result-box {
-      margin-top: 18px; padding: 16px; border-radius: 10px;
-      background: var(--bg-alt); border: 1px solid var(--border);
-      display: none;
-    }
-    .result-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
-      font-size: 0.88rem;
-    }
-    .result-row:last-child { border-bottom: none; }
-    .status-tag {
-      font-family: var(--mono); font-size: 0.75rem; font-weight: 700;
-      padding: 3px 9px; border-radius: 5px;
-    }
-    .st-ok { background: var(--emerald-soft); color: var(--emerald); }
-    .st-bad { background: var(--danger-soft); color: var(--danger); }
-    .st-warn { background: var(--brass-soft); color: var(--brass); }
-
-    /* Discord Support Card */
-    .discord-box {
-      background: linear-gradient(135deg, #101528 0%, #151c36 100%);
-      border: 1px solid rgba(88, 101, 242, 0.4);
-      border-radius: 14px; padding: 32px;
-      display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 28px; align-items: center;
-    }
-    .discord-list { list-style: none; margin-top: 14px; display: grid; gap: 8px; }
-    .discord-list li {
-      font-size: 0.88rem; color: var(--text-dim);
-      padding-left: 16px; position: relative;
-    }
-    .discord-list li::before {
-      content: ">"; position: absolute; left: 0; color: var(--brass);
-      font-family: var(--mono); font-weight: 700;
-    }
-
-    /* Modal (Testing Mode Notice — Zero Real File Released Yet) */
-    .modal-backdrop {
-      position: fixed; inset: 0; background: rgba(3, 6, 11, 0.78);
-      backdrop-filter: blur(6px);
-      display: none; align-items: center; justify-content: center;
-      padding: 20px; z-index: 200;
-    }
-    .modal-backdrop.open { display: flex; }
-    .modal {
-      background: var(--surface); border: 1px solid var(--border-strong);
-      border-radius: 14px; max-width: 480px; width: 100%; padding: 26px;
-      box-shadow: 0 28px 70px rgba(0, 0, 0, 0.6);
-    }
-    .modal h3 { font-size: 1.15rem; margin-bottom: 10px; }
-    .modal p { font-size: 0.9rem; color: var(--text-dim); margin-bottom: 16px; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
-
-    /* Reveal Motion */
-    .reveal { opacity: 0; transform: translateY(16px); transition: opacity 0.55s ease, transform 0.55s cubic-bezier(0.22, 1, 0.36, 1); }
-    .reveal.visible { opacity: 1; transform: translateY(0); }
-
-    footer {
-      padding: 36px 0; color: var(--text-muted); font-size: 0.84rem;
-    }
-    .footer-inner {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 16px; flex-wrap: wrap;
-    }
-
-    @media (max-width: 900px) {
-      .hero-grid, .discord-box { grid-template-columns: 1fr; }
-      .nav-links { display: none; }
-      .menu-toggle { display: inline-flex; }
-    }
-    @media (prefers-reduced-motion: reduce) {
-      .reveal { opacity: 1; transform: none; transition: none; }
-      .live-dot { animation: none; }
-    }
-  </style>
-</head>
-<body class="grid-bg">
-
-  <!-- Top Telemetry Bar -->
-  <div class="top-bar">
-    <div class="container top-bar-inner">
-      <div class="top-bar-left">
-        <span class="live-dot" id="statusDot"></span>
-        <span id="topStatusText">PRE-RELEASE PUBLIC PREVIEW &bull; BUILD v7.0.0 IRONCLAD &bull; NO PUBLIC BINARY RELEASED YET</span>
-      </div>
-      <div id="workerPingText">API: zge-license-api.zwell.workers.dev</div>
-    </div>
-  </div>
-
-  <!-- Header -->
-  <header>
-    <div class="container nav">
-      <a href="#top" class="brand">
-        <span class="brand-mark">ZGE</span>
-        <span>
-          ZGE Geodetic &amp; GIS Suite
-          <span class="brand-sub">BY WENDELL HERAMIA &bull; PH CAD ENGINE</span>
-        </span>
-      </a>
-      <nav class="nav-links" aria-label="Main Navigation">
-        <a href="#commands">91 Commands</a>
-        <a href="#security">Security</a>
-        <a href="#partner">Partner</a>
-        <a href="#payments">Payments</a>
-        <a href="#license-portal">License Portal</a>
-        <a href="#support" class="btn btn-sm btn-discord">Discord Support</a>
-      </nav>
-      <button class="menu-toggle" id="menuToggle" type="button" aria-expanded="false">MENU</button>
-    </div>
-    <div class="mobile-nav" id="mobileNav">
-      <a href="#commands">91 Commands</a>
-      <a href="#security">Security &amp; Privacy</a>
-      <a href="#partner">DroidRTS Partnership</a>
-      <a href="#payments">Payment Methods</a>
-      <a href="#license-portal">License Portal</a>
-      <a href="#support">Discord Support</a>
-    </div>
-  </header>
-
-  <main id="top">
-    <!-- Hero -->
-    <section class="hero">
-      <div class="container hero-grid">
-        <div class="reveal visible">
-          <div class="eyebrow" id="versionBadge">PREVIEW BUILD v7.0.0 IRONCLAD &bull; AUTOCAD 2013&ndash;2026</div>
-          <h1>Precision <span>Cadastral &amp; GIS</span> Automation Inside AutoCAD.</h1>
-          <p class="hero-lead">
-            Built for Philippine Geodetic Engineers. Plot TCT bearings, adjust traverses, subdivide lots, export DENR-LMB eSurvey XML, and produce print-ready survey returns — 100% offline-first so your client drawings never leave your workstation.
-          </p>
-          <div class="hero-actions">
-            <button type="button" class="btn btn-brass" id="previewDownloadBtn">
-              Pre-Release Testing Status
-            </button>
-            <a href="#support" class="btn btn-outline">
-              Contact via Official Discord
-            </a>
-          </div>
-          <div class="hero-metrics">
-            <div>
-              <div class="metric-val">91</div>
-              <div class="metric-lbl">Original CAD Commands</div>
-            </div>
-            <div>
-              <div class="metric-val">100%</div>
-              <div class="metric-lbl">Offline Client Privacy</div>
-            </div>
-            <div>
-              <div class="metric-val">2013&ndash;26</div>
-              <div class="metric-lbl">AutoCAD &amp; Civil 3D</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Interactive Live Survey Canvas -->
-        <div class="instrument-card reveal visible">
-          <div class="instrument-head">
-            <span>PRS92 / PTM ZONE III</span>
-            <strong id="courseReadout">BLLM-1 &rarr; COR. 1</strong>
-          </div>
-          <div class="canvas-wrap" id="canvasWrap">
-            <canvas id="surveyCanvas"></canvas>
-            <div class="coord-hud">
-              <span>N: <b id="hudN">1815420.145</b> m</span>
-              <span>E: <b id="hudE">458912.680</b> m</span>
-              <span>AREA: <b>1,482.50 sq.m</b></span>
-            </div>
-          </div>
-          <div class="instrument-foot">
-            <span>MOVE CURSOR TO INSPECT PRS92 COORDS</span>
-            <button type="button" class="btn btn-sm btn-outline" id="replayPlotBtn">Replay Plot</button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Interactive 84-Command Explorer -->
-    <section id="commands" class="block">
-      <div class="container reveal">
-        <div class="sec-kicker">Workflow Coverage</div>
-        <h2 class="sec-title">91 Commands Across Every Philippine Survey Stage</h2>
-        <p class="sec-sub">Filter core commands below by workflow stage. All modules follow the North = 0&deg; clockwise geodetic azimuth convention with full undo-group protection.</p>
-
-        <div class="filter-bar" id="cmdFilters" role="tablist">
-          <button type="button" class="filter-btn active" data-cat="all">Featured Highlights</button>
-          <button type="button" class="filter-btn" data-cat="plot">Plot &amp; TCT</button>
-          <button type="button" class="filter-btn" data-cat="subdiv">Subdivision &amp; QA</button>
-          <button type="button" class="filter-btn" data-cat="lmb">DENR-LMB &amp; Return</button>
-          <button type="button" class="filter-btn" data-cat="gis">RTK, QGIS &amp; Earthwork</button>
-          <button type="button" class="filter-btn" data-cat="assessor">Assessor &amp; Pro Utils</button>
-        </div>
-
-        <div class="cmd-grid" id="cmdGrid"></div>
-      </div>
-    </section>
-
-    <!-- Security & VIP Privacy -->
-    <section id="security" class="block" style="background: var(--bg-alt);">
-      <div class="container reveal">
-        <div class="sec-kicker">Ironclad v7.0 Architecture</div>
-        <h2 class="sec-title">Built for Commercial Protection &amp; VIP Client Confidentiality</h2>
-        <p class="sec-sub">Strict separation between licensing integrity and your private survey data.</p>
-        <div class="grid-3">
-          <div class="card">
-            <span class="card-code">ZERO-UPLOAD PRIVACY</span>
-            <h3>100% Offline Survey Execution</h3>
-            <p>No TCT text, lot coordinates, tie points, or DWG drawings are ever transmitted to any cloud server. Safe for confidential government, corporate, and VIP engagements.</p>
-          </div>
-          <div class="card">
-            <span class="card-code">5-FACTOR HARDWARE LOCK</span>
-            <h3>Separate-Namespace VLX Binary</h3>
-            <p>Compiled into a protected AutoCAD binary bound to your workstation's 5-factor hardware fingerprint with opaque encrypted <code>Z6-...</code> activation tokens.</p>
-          </div>
-          <div class="card">
-            <span class="card-code">FIELD-PROOF UPDATES</span>
-            <h3>Zero Internet Lockouts</h3>
-            <p>Works indefinitely in remote survey sites without internet. When a new version releases, replace the single VLX file and your existing license stays active automatically.</p>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Official Partnership: DroidRTS -->
-    <section id="partner" class="block">
-      <div class="container reveal">
-        <div class="partner-box">
-          <div class="partner-meta">
-            <span class="partner-pill">OFFICIAL ECOSYSTEM PARTNER</span>
-            <h2 class="sec-title" style="margin-bottom: 8px;">In Partnership with DroidRTS</h2>
-            <p style="color: var(--text-dim); font-size: 0.94rem;">
-              ZGE Complete Geodetic &amp; GIS Suite partners with <strong style="color: var(--text);">DroidRTS</strong> to support open technical tooling, verified software distribution, and Philippine engineering productivity workflows.
-            </p>
-          </div>
-          <div>
-            <a href="https://droidrts.pages.dev" target="_blank" rel="noopener noreferrer" class="btn btn-outline">
-              Visit droidrts.pages.dev &rarr;
-            </a>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Payment Methods -->
-    <section id="payments" class="block" style="background: var(--bg-alt);">
-      <div class="container reveal">
-        <div class="sec-kicker">Philippine Payment Channels</div>
-        <h2 class="sec-title">Supported Payment Methods (Opening at Launch)</h2>
-        <p class="sec-sub">Once public licensing opens, purchases will be processed with official manual verification and receipt issuance via our Official Discord channel.</p>
-        <div class="grid-3">
-          <div class="card">
-            <span class="pay-badge pay-gcash">GCASH &bull; QRPH</span>
-            <h3>GCash Direct Transfer</h3>
-            <p>Fast mobile wallet payment with screenshot receipt verification inside your private Discord ticket.</p>
-          </div>
-          <div class="card">
-            <span class="pay-badge pay-maya">MAYA &bull; WALLET / QR</span>
-            <h3>Maya Transfer</h3>
-            <p>Accepted via Maya wallet or QRPh for individual geodetic engineers and field surveyors.</p>
-          </div>
-          <div class="card">
-            <span class="pay-badge pay-bank">INSTAPAY &bull; PESONET</span>
-            <h3>Philippine Bank Transfer</h3>
-            <p>Direct bank transfer for surveying firms, multi-seat office licenses, and corporate procurement.</p>
-          </div>
-        </div>
-        <div class="notice-strip">
-          <strong style="color: var(--brass);">Public Testing Notice:</strong> No commercial files are publicly downloadable yet while final QA testing is underway. Official payment details are shared <strong>only</strong> inside verified private tickets on our Official Discord server to protect buyers from impersonators.
-        </div>
-      </div>
-    </section>
-
-    <!-- Live License Portal -->
-    <section id="license-portal" class="block">
-      <div class="container reveal">
-        <div class="sec-kicker">Live Cloudflare D1 Verification</div>
-        <h2 class="sec-title">License Status Portal</h2>
-        <p class="sec-sub">Registered testers and future licensees can check their <code>Z6-...</code> license standing in real time. Client names are automatically masked for privacy.</p>
-        <div class="portal-card">
-          <form class="portal-form" id="licenseForm">
-            <input type="text" id="licenseInput" class="portal-input" placeholder="Z6-XXXX-XXXX-XXXX-XXXX" maxlength="32" required />
-            <button type="submit" class="btn btn-brass" id="checkBtn">Check Status</button>
-          </form>
-          <div class="result-box" id="resultBox"></div>
-        </div>
-      </div>
-    </section>
-
-
-    <!-- Hybrid Inquiry & Pre-Order Form -->
-    <section id="inquire" class="block">
-      <div class="container reveal">
-        <div class="sec-kicker">Zero-Mistake Hybrid Onboarding</div>
-        <h2 class="sec-title">Request Access or Pre-Order Inquiry</h2>
-        <p class="sec-sub">Fill out your details below to get a Reference Code (<code>INQ-XXXXXX</code>). Paste that code in our Discord private ticket so your license is processed cleanly with zero typos.</p>
-        <div class="portal-card">
-          <form id="inquiryForm" style="display:grid;gap:12px;">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
-              <input type="text" id="inqName" class="portal-input" style="text-transform:none;" placeholder="Full Name (e.g. Engr. Juan Dela Cruz) *" maxlength="100" required />
-              <input type="text" id="inqContact" class="portal-input" style="text-transform:none;" placeholder="Discord Username or Email *" maxlength="100" required />
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-              <select id="inqCad" class="portal-input" style="text-transform:none;">
-                <option value="AutoCAD 2024-2026">AutoCAD / Civil 3D 2024–2026</option>
-                <option value="AutoCAD 2018-2023">AutoCAD / Civil 3D 2018–2023</option>
-                <option value="AutoCAD 2013-2017">AutoCAD / Civil 3D 2013–2017</option>
-              </select>
-              <select id="inqTier" class="portal-input" style="text-transform:none;">
-                <option value="PRO">PRO (Full 91 Commands)</option>
-                <option value="STANDARD">STANDARD</option>
-                <option value="ENTERPRISE">ENTERPRISE (Multi-Seat Firm)</option>
-              </select>
-              <select id="inqPay" class="portal-input" style="text-transform:none;">
-                <option value="GCASH">GCash / QRPh</option>
-                <option value="MAYA">Maya Wallet</option>
-                <option value="BANK">Bank Transfer (InstaPay/PESONet)</option>
-              </select>
-            </div>
-            <input type="text" id="inqHwid" class="portal-input" placeholder="Optional Machine ID (ZGE-XXXX-XXXX-XXXX) — leave blank if none yet" maxlength="24" />
-            <input type="text" id="inqHp" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" />
-            <input type="text" id="inqNotes" class="portal-input" style="text-transform:none;" placeholder="Optional message or question (do NOT paste TCT/DWG data here)" maxlength="250" />
-            <button type="submit" class="btn btn-brass" id="inqBtn">Submit Inquiry &amp; Get Reference Code</button>
-          </form>
-          <div class="result-box" id="inqResultBox"></div>
-        </div>
-      </div>
-    </section>
-
-
-    <!-- Live Real-Time Order / Ticket Progress Tracker -->
-    <section id="track-order" class="block" style="background: var(--bg-alt);">
-      <div class="container reveal">
-        <div class="sec-kicker">Real-Time Client Transparency</div>
-        <h2 class="sec-title">Track Your Inquiry &amp; License Progress</h2>
-        <p class="sec-sub">Enter your <code>INQ-XXXXXX</code> Reference Code to see live updates as Wendell verifies your request and prepares your protected ZGE package.</p>
-        <div class="portal-card">
-          <form class="portal-form" id="trackForm" style="margin-top:0;">
-            <input type="text" id="trackInput" class="portal-input" placeholder="INQ-XXXXXX" maxlength="16" required />
-            <button type="submit" class="btn btn-brass" id="trackBtn">Track Progress</button>
-          </form>
-          <div id="trackResult" class="result-box"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Discord Support & Private Concerns -->
-    <section id="support" class="block" style="background: var(--bg-alt);">
-      <div class="container reveal">
-        <div class="discord-box">
-          <div>
-            <div class="sec-kicker" style="color: #9aa5ff;">Direct Developer Support</div>
-            <h2 class="sec-title">Private Concerns, Licensing &amp; Beta Access</h2>
-            <p style="color: var(--text-dim); font-size: 0.94rem;">
-              For private inquiries, VIP/firm licensing, hardware transfers, or bug reports, message Wendell directly or open a private ticket inside our Official Discord server.
-            </p>
-            <ul class="discord-list">
-              <li>Never post sensitive TCTs, DWG plans, or personal Machine IDs in public channels.</li>
-              <li>Use the <strong>#private-tickets</strong> channel for 1-on-1 confidential support and activation.</li>
-              <li>Check <strong>#announcements</strong> and <strong>#changelog</strong> for verified release dates &amp; version rollbacks.</li>
-              <li><strong>Assisted Remote Setup (AnyDesk / RustDesk):</strong> Prefer hands-free installation? Request guided remote setup while you watch live on screen.</li>
-              <li><strong>No Discord?</strong> Message Wendell directly on Official Facebook / Messenger for the same verified support.</li>
-            </ul>
-          </div>
-          <div style="display: flex; flex-direction: column; gap: 12px;">
-            <a id="discordInviteBtn" href="#support" class="btn btn-discord" style="width: 100%;">
-              Join Official ZGE Discord Server
-            </a>
-            <button type="button" id="copyDiscordBtn" class="btn btn-outline" style="width: 100%;">
-              Copy Developer Discord Handle
-            </button>
-            <a id="fbSupportBtn" href="#support" class="btn btn-outline" style="width: 100%; border-color: #3b82f6; color: #93c5fd;">
-              Message via Facebook / Messenger (No Discord Needed)
-            </a>
-            <div id="discordFeedback" style="font-family: var(--mono); font-size: 0.76rem; color: var(--text-muted); text-align: center;">
-              Update DISCORD_INVITE_URL in CONFIG before publishing
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Testing Mode Modal -->
-  <div class="modal-backdrop" id="testingModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-    <div class="modal">
-      <div class="eyebrow" style="margin-bottom: 12px;">PUBLIC TESTING MODE ACTIVE</div>
-      <h3 id="modalTitle">Release File Not Yet Publicly Available</h3>
-      <p>
-        ZGE Complete Geodetic &amp; GIS Suite v7.0 Ironclad is currently in closed pre-release verification. No real installer or binary file is publicly downloadable yet.
-      </p>
-      <p style="font-size: 0.84rem;">
-        Want to request beta testing access or get notified on launch day? Reach out directly via our Official Discord server.
-      </p>
-      <div class="modal-actions">
-        <button type="button" class="btn btn-sm btn-outline" id="closeModalBtn">Close</button>
-        <a href="#support" class="btn btn-sm btn-discord" id="modalDiscordBtn">Go to Discord Support</a>
-      </div>
-    </div>
-  </div>
-
-  <footer>
-    <div class="container footer-inner">
-      <div>&copy; <span id="year"></span> Wendell Heramia &bull; ZGE Complete Geodetic &amp; GIS Suite v7.0 Ironclad</div>
-      <div style="font-family: var(--mono); font-size: 0.78rem;">
-        Partner: <a href="https://droidrts.pages.dev" target="_blank" rel="noopener noreferrer" style="color: var(--brass);">droidrts.pages.dev</a>
-      </div>
-    </div>
-  </footer>
-
-  <script>
-    // =========================================================================
-    // OWNER CONFIGURATION — Edit only these values when ready to launch!
-    // =========================================================================
-    const CONFIG = {
-      PUBLIC_TESTING_MODE: true, // Keep true so NO real file is released while testing!
-      WORKER_URL: "https://zge-license-api.zwell.workers.dev",
-      DISCORD_INVITE_URL: "https://discord.gg/pfGNGcZVjW",    // Paste your real https://discord.gg/XXXX invite link here
-      DISCORD_HANDLE: "zwell04", // Replace with your exact Discord username
-      FACEBOOK_URL: "https://www.facebook.com/zwellge" // Paste your official Facebook Page / Messenger link (e.g. https://m.me/yourpage)
+    const corsHeaders = {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
     };
 
-    document.getElementById("year").textContent = new Date().getFullYear();
-    if (CONFIG.PUBLIC_TESTING_MODE) {
-      document.querySelectorAll('#license-portal, a[href="#license-portal"]').forEach(el => { el.style.display = "none"; });
+    if (request.method === "OPTIONS") {
+      return new Response(null, { headers: corsHeaders });
     }
 
-    // Mobile Menu
-    const menuToggle = document.getElementById("menuToggle");
-    const mobileNav = document.getElementById("mobileNav");
-    menuToggle.addEventListener("click", () => {
-      const open = mobileNav.classList.toggle("open");
-      menuToggle.setAttribute("aria-expanded", String(open));
-    });
-    mobileNav.querySelectorAll("a").forEach(a => a.addEventListener("click", () => {
-      mobileNav.classList.remove("open");
-      menuToggle.setAttribute("aria-expanded", "false");
-    }));
-
-    // Testing Mode Modal (Guarantees zero real file download while PUBLIC_TESTING_MODE = true)
-    const testingModal = document.getElementById("testingModal");
-    const previewDownloadBtn = document.getElementById("previewDownloadBtn");
-    const closeModalBtn = document.getElementById("closeModalBtn");
-    const modalDiscordBtn = document.getElementById("modalDiscordBtn");
-
-    function openTestingModal() { testingModal.classList.add("open"); }
-    function closeTestingModal() { testingModal.classList.remove("open"); }
-
-    previewDownloadBtn.addEventListener("click", () => {
-      if (CONFIG.PUBLIC_TESTING_MODE) {
-        openTestingModal();
-      } else if (window.__LIVE_DOWNLOAD_URL && window.__LIVE_DOWNLOAD_URL.startsWith("https://")) {
-        window.open(window.__LIVE_DOWNLOAD_URL, "_blank", "noopener,noreferrer");
-      } else {
-        openTestingModal();
-      }
-    });
-    closeModalBtn.addEventListener("click", closeTestingModal);
-    modalDiscordBtn.addEventListener("click", closeTestingModal);
-    testingModal.addEventListener("click", (e) => { if (e.target === testingModal) closeTestingModal(); });
-
-    // Discord Controls
-    const discordInviteBtn = document.getElementById("discordInviteBtn");
-    const copyDiscordBtn = document.getElementById("copyDiscordBtn");
-    const discordFeedback = document.getElementById("discordFeedback");
-    const fbSupportBtn = document.getElementById("fbSupportBtn");
-    if (fbSupportBtn) {
-      if (CONFIG.FACEBOOK_URL && CONFIG.FACEBOOK_URL.startsWith("https://")) {
-        fbSupportBtn.href = CONFIG.FACEBOOK_URL;
-        fbSupportBtn.target = "_blank";
-        fbSupportBtn.rel = "noopener noreferrer";
-      } else {
-        fbSupportBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          discordFeedback.style.color = "#93c5fd";
-          discordFeedback.textContent = "Facebook link pending — add FACEBOOK_URL in CONFIG before publishing.";
-        });
-      }
+    if (!env.DB) {
+      return jsonResponse({ ok: false, error: "Server misconfigured: DB binding missing." }, 500, corsHeaders);
     }
 
-    if (CONFIG.DISCORD_INVITE_URL && CONFIG.DISCORD_INVITE_URL.startsWith("https://")) {
-      discordInviteBtn.href = CONFIG.DISCORD_INVITE_URL;
-      discordInviteBtn.target = "_blank";
-      discordInviteBtn.rel = "noopener noreferrer";
-      discordFeedback.textContent = "Direct invite active — PM or open a private ticket anytime.";
-    } else {
-      discordInviteBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        discordFeedback.style.color = "#d4a353";
-        discordFeedback.textContent = "Invite link pending — copy developer handle @" + CONFIG.DISCORD_HANDLE + " to PM directly.";
-      });
-    }
+    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
 
-    copyDiscordBtn.addEventListener("click", async () => {
-      const text = CONFIG.DISCORD_HANDLE;
-      let copied = false;
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(text);
-          copied = true;
+    try {
+      // =====================================================================
+      // 1. PUBLIC STATUS & AUTOCAD ZGEUPDATE (/version.json)
+      // =====================================================================
+      if ((path === "/api/v1/public/status" || path === "/version.json") && request.method === "GET") {
+        const cfg = await env.DB.prepare("SELECT * FROM app_config WHERE id = 1").first();
+        if (!cfg) return jsonResponse({ ok: false, error: "App config missing." }, 500, corsHeaders);
+
+        if (path === "/version.json") {
+          // Exact schema expected by ZGEUPDATE in ZGE_License.lsp
+          return jsonResponse({
+            latest: cfg.latest_version,
+            min_supported: cfg.min_supported_version,
+            download_url: cfg.download_url,
+            changelog: cfg.release_notes,
+            updated_at: (cfg.updated_at || "").slice(0, 10),
+          }, 200, corsHeaders);
         }
-      } catch (_) {}
-      if (!copied) {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        document.body.appendChild(ta);
-        ta.select();
-        try { document.execCommand("copy"); copied = true; } catch (_) {}
-        document.body.removeChild(ta);
-      }
-      discordFeedback.style.color = "#10b981";
-      discordFeedback.textContent = copied
-        ? "Copied Discord handle: @" + text
-        : "Developer Discord handle: @" + text;
-    });
 
-    // Live Cloudflare Worker Status Sync
-    async function syncWorkerStatus() {
-      const pingEl = document.getElementById("workerPingText");
-      const badgeEl = document.getElementById("versionBadge");
-      try {
-        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/status");
-        const data = await res.json();
-        if (data && data.ok) {
-          window.__LIVE_DOWNLOAD_URL = data.download_url || "";
-          badgeEl.textContent = (CONFIG.PUBLIC_TESTING_MODE ? "PREVIEW BUILD " : "RELEASE ") + "v" + data.latest_version + " IRONCLAD • AUTOCAD 2013–2026";
-          pingEl.textContent = "CLOUD API: ONLINE (v" + data.latest_version + ")";
-          pingEl.style.color = "#10b981";
-          if (!CONFIG.PUBLIC_TESTING_MODE && data.download_url && data.download_url.startsWith("https://")) {
-            previewDownloadBtn.textContent = "Download v" + data.latest_version + " Release";
+        return jsonResponse({
+          ok: true,
+          latest_version: cfg.latest_version,
+          min_supported_version: cfg.min_supported_version,
+          download_url: cfg.download_url,
+          release_notes: cfg.release_notes,
+          maintenance_mode: Boolean(cfg.maintenance_mode),
+        }, 200, corsHeaders);
+      }
+
+      // =====================================================================
+      // 2. PUBLIC WEBSITE LICENSE CHECKER (Rate-limited: 20 req / 10 min / IP)
+      // =====================================================================
+      if (path === "/api/v1/public/check-license" && request.method === "POST") {
+        if (!(await allowRate(env.DB, `chk:${ip}`, 20, 600))) {
+          return jsonResponse({ ok: false, error: "Too many requests. Please wait a few minutes." }, 429, corsHeaders);
+        }
+        const body = await safeBody(request);
+        const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
+        if (!KEY_RE.test(key)) {
+          return jsonResponse({ ok: false, error: "Invalid license key format." }, 400, corsHeaders);
+        }
+
+        const lic = await env.DB.prepare(
+          "SELECT client_name, tier, status, expires_at FROM licenses WHERE license_key = ?"
+        ).bind(key).first();
+
+        if (!lic) {
+          return jsonResponse({ ok: false, error: "License not registered in cloud portal." }, 404, corsHeaders);
+        }
+
+        return jsonResponse({
+          ok: true,
+          status: lic.status,
+          tier: lic.tier,
+          client_name: maskName(lic.client_name),
+          expires_at: lic.expires_at,
+        }, 200, corsHeaders);
+      }
+
+      // =====================================================================
+      // 2B. HYBRID WEBSITE INQUIRY / ORDER FORM (Rate-limited: 5 req / 15 min / IP)
+      // =====================================================================
+      if (path === "/api/v1/public/inquiry" && request.method === "POST") {
+        if (!(await allowRate(env.DB, `inq:${ip}`, 5, 900))) {
+          return jsonResponse({ ok: false, error: "Too many submissions. Please wait 15 minutes or message Discord." }, 429, corsHeaders);
+        }
+        const body = await safeBody(request);
+        if (String(body.website_hp || "").trim()) {
+          return jsonResponse({ ok: true, ref_code: "INQ-000000", message: "Received." }, 200, corsHeaders);
+        }
+        const name = String(body.client_name || "").trim().slice(0, 100);
+        const contact = String(body.contact_info || "").trim().slice(0, 100);
+        const cad = String(body.cad_version || "").trim().slice(0, 40);
+        const hwid = String(body.hwid_submitted || "").trim().toUpperCase().slice(0, 32);
+        const tier = VALID_TIERS.has(String(body.plan_tier || "").toUpperCase()) ? String(body.plan_tier).toUpperCase() : "PRO";
+        const pay = String(body.payment_method || "GCASH").trim().toUpperCase().slice(0, 24);
+        const notes = String(body.notes || "").trim().slice(0, 300);
+
+        if (name.length < 3 || contact.length < 3) {
+          return jsonResponse({ ok: false, error: "Please enter your full name and Discord/Email contact." }, 400, corsHeaders);
+        }
+        if (hwid && !HWID_RE.test(hwid)) {
+          return jsonResponse({ ok: false, error: "Invalid Machine ID format. Must be ZGE-XXXX-XXXX-XXXX or leave blank for pre-order." }, 400, corsHeaders);
+        }
+
+        const rnd = Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+        const refCode = `INQ-${rnd}`;
+
+        await env.DB.prepare(
+          `INSERT INTO inquiries (ref_code, client_name, contact_info, cad_version, hwid_submitted, plan_tier, payment_method, notes)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
+        ).bind(refCode, name, contact, cad, hwid, tier, pay, notes).run();
+
+        await sendDiscordInquiry(env, `New Website Inquiry ${refCode}`, `Name: ${name}\nContact: ${contact}\nPlan: ${tier} (${pay})\nCAD: ${cad || "N/A"}\nHWID: ${hwid || "TBD"}`, 0x38bdf8);
+        await syncToGoogleSheet(env, "Website Inquiries", [new Date().toISOString(), refCode, name, contact, cad || "N/A", tier, pay, hwid || "TBD", notes, "PENDING"]);
+        return jsonResponse({ ok: true, ref_code: refCode, message: "Inquiry saved. Share this Reference Code in our Discord #zge-support-ticket." }, 200, corsHeaders);
+      }
+
+      // =====================================================================
+      // 2C. REAL-TIME PUBLIC TICKET / INQUIRY TRACKER (Rate-limited: 30 req / 10 min / IP)
+      // =====================================================================
+      if (path === "/api/v1/public/track-inquiry" && request.method === "GET") {
+        if (!(await allowRate(env.DB, `trk:${ip}`, 30, 600))) {
+          return jsonResponse({ ok: false, error: "Too many lookups. Please wait a few minutes." }, 429, corsHeaders);
+        }
+        const ref = String(url.searchParams.get("ref") || "").trim().toUpperCase().slice(0, 16);
+        if (!/^INQ-[A-F0-9]{6}$/.test(ref)) {
+          return jsonResponse({ ok: false, error: "Invalid Reference Code format (expected INQ-XXXXXX)." }, 400, corsHeaders);
+        }
+        const row = await env.DB.prepare(
+          "SELECT ref_code, client_name, plan_tier, status, progress_stage, status_note, created_at, updated_at FROM inquiries WHERE ref_code = ?"
+        ).bind(ref).first();
+        if (!row) {
+          return jsonResponse({ ok: false, error: "Reference Code not found." }, 404, corsHeaders);
+        }
+        // Temporary INQ Lifecycle: (1) Auto-close & hand off to Z6 License Key once Completed; (2) Auto-expire unpaid tickets after 7 days
+        const createdMs = Date.parse((row.created_at || "").replace(" ", "T") + "Z");
+        const ageDays = Number.isFinite(createdMs) ? (Date.now() - createdMs) / 86400000 : 0;
+        if (row.status === "COMPLETED" || Number(row.progress_stage || 1) >= 5) {
+          return jsonResponse({
+            ok: true,
+            ref_code: row.ref_code,
+            client_name: maskName(row.client_name),
+            plan_tier: row.plan_tier,
+            status: "ARCHIVED_LICENSE_ACTIVE",
+            progress_stage: 5,
+            status_note: "This temporary inquiry ticket is now closed. Please use your permanent Z6-... License Key in the License Portal going forward.",
+            updated_at: row.updated_at || row.created_at
+          }, 200, corsHeaders);
+        }
+        if (ageDays > 7 && row.status !== "BLOCKED") {
+          return jsonResponse({
+            ok: false,
+            error: "This temporary INQ ticket expired after 7 days. Submit a new inquiry or use your permanent Z6-... License Key if already activated."
+          }, 410, corsHeaders);
+        }
+        return jsonResponse({
+          ok: true,
+          ref_code: row.ref_code,
+          client_name: maskName(row.client_name),
+          plan_tier: row.plan_tier,
+          status: row.status,
+          progress_stage: Number(row.progress_stage || 1),
+          status_note: row.status_note || "Queued for review.",
+          updated_at: row.updated_at || row.created_at
+        }, 200, corsHeaders);
+      }
+
+      // =====================================================================
+      // 2D. 1-TIME SELF-SERVICE VERSION DOWNGRADE CHECK (Requires Ticket After 1st Use)
+      // =====================================================================
+      if (path === "/api/v1/public/request-downgrade" && request.method === "POST") {
+        if (!(await allowRate(env.DB, `dg:${ip}`, 10, 600))) {
+          return jsonResponse({ ok: false, error: "Too many requests." }, 429, corsHeaders);
+        }
+        const body = await safeBody(request);
+        const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
+        const targetVer = String(body.target_version || "Previous Stable").trim().slice(0, 24);
+        if (!KEY_RE.test(key)) {
+          return jsonResponse({ ok: false, error: "Valid Z6 license key required." }, 400, corsHeaders);
+        }
+        const lic = await env.DB.prepare(
+          "SELECT id, watermark, client_name, status, downgrades_used, max_downgrades FROM licenses WHERE license_key = ?"
+        ).bind(key).first();
+        if (!lic || lic.status !== "ACTIVE") {
+          return jsonResponse({ ok: false, error: "Active license not found." }, 404, corsHeaders);
+        }
+        const used = Number(lic.downgrades_used || 0);
+        const maxD = Number(lic.max_downgrades ?? 1);
+        if (used >= maxD) {
+          return jsonResponse({
+            ok: false,
+            requires_ticket: true,
+            error: "1-time self-service downgrade limit reached. Please open a Private Ticket in Discord for further version rollbacks."
+          }, 403, corsHeaders);
+        }
+        await env.DB.prepare(
+          "UPDATE licenses SET downgrades_used = downgrades_used + 1, updated_at = datetime('now') WHERE id = ?"
+        ).bind(lic.id).run();
+        await sendDiscordInquiry(env, "1-Time Downgrade Approved", `Watermark: ${lic.watermark}\nClient: ${lic.client_name}\nRequested Build: ${targetVer}\nRemaining Self-Service Downgrades: 0`, 0xf59e0b);
+        return jsonResponse({
+          ok: true,
+          approved: true,
+          remaining_downgrades: Math.max(0, maxD - used - 1),
+          message: "1-time downgrade approved! Message Wendell in your Discord ticket with this confirmation to receive the archived stable .VLX."
+        }, 200, corsHeaders);
+      }
+
+      // =====================================================================
+      // 3. AUTOCAD v7.0 IRONCLAD ANTI-PIRACY HEARTBEAT (/api/heartbeat)
+      // =====================================================================
+      if (path === "/api/heartbeat" && request.method === "POST") {
+        if (!(await allowRate(env.DB, `hb:${ip}`, 60, 600))) {
+          return jsonResponse({ ok: false, error: "Rate limit exceeded." }, 429, corsHeaders);
+        }
+        const body = await safeBody(request);
+        const key = String(body.key || "").trim().toUpperCase().slice(0, 32);
+        const hwid = String(body.hwid || "").trim().toUpperCase().slice(0, 32);
+        const wm = String(body.watermark || "").trim().toUpperCase().slice(0, 24);
+
+        if (!KEY_RE.test(key) || !HWID_RE.test(hwid)) {
+          return jsonResponse({ ok: false, error: "Invalid heartbeat payload." }, 400, corsHeaders);
+        }
+
+        // 1. Check permanent HWID blocklist first
+        const blk = await env.DB.prepare("SELECT reason FROM blocked_hwids WHERE hwid = ?").bind(hwid).first();
+        if (blk) {
+          await sendDiscordAlert(env, "BLOCKLISTED PC ATTEMPT", `Blocked HWID ${hwid} tried key ${key} (${wm || "NO_WM"}).\nReason: ${blk.reason}\nIP: ${ip}`, 0xf43f5e);
+          await syncToGoogleSheet(env, "Security Alerts", [new Date().toISOString(), "BLOCKED_PC", wm || "NO_WM", key, hwid, blk.reason, ip]);
+          return jsonResponse({ status: "BLOCKED" }, 200, corsHeaders);
+        }
+
+        // 2. Check revocation status in licenses table
+        const lic = await env.DB.prepare("SELECT status FROM licenses WHERE license_key = ?").bind(key).first();
+        if (lic && lic.status !== "ACTIVE") {
+          return jsonResponse({ status: "REVOKED" }, 200, corsHeaders);
+        }
+
+        // Deduplicated upsert into heartbeats (prevents D1 bloat)
+        await env.DB.prepare(
+          `INSERT INTO heartbeats (license_key, hwid, watermark, seen_at)
+           VALUES (?, ?, ?, datetime('now'))
+           ON CONFLICT(license_key, hwid) DO UPDATE SET seen_at = datetime('now'), watermark = excluded.watermark`
+        ).bind(key, hwid, wm).run();
+
+        const cntRow = await env.DB.prepare(
+          "SELECT COUNT(*) AS c FROM heartbeats WHERE license_key = ?"
+        ).bind(key).first();
+        const hwidCount = Number(cntRow?.c || 1);
+
+        if (hwidCount > 1) {
+          await env.DB.prepare(
+            `INSERT INTO piracy_alerts (license_key, watermark, hwid_count, last_hwid, detected_at)
+             VALUES (?, ?, ?, ?, datetime('now'))
+             ON CONFLICT(license_key) DO UPDATE SET
+               hwid_count = excluded.hwid_count,
+               last_hwid = excluded.last_hwid,
+               detected_at = datetime('now')`
+          ).bind(key, wm, hwidCount, hwid).run();
+          await sendDiscordAlert(env, "MULTI-PC PIRACY ALERT", `Watermark: ${wm || "UNKNOWN"}\nKey: ${key}\nDistinct PCs: ${hwidCount}\nLatest HWID: ${hwid}\nIP: ${ip}`, 0xf59e0b);
+          await syncToGoogleSheet(env, "Security Alerts", [new Date().toISOString(), "MULTI_PC_PIRACY", wm || "UNKNOWN", key, hwid, String(hwidCount), ip]);
+        }
+
+        // Auto-complete matching inquiry to Stage 5/5 when buyer activates in AutoCAD (0 clicks for owner!)
+        await env.DB.prepare(
+          "UPDATE inquiries SET status = 'COMPLETED', progress_stage = 5, status_note = 'License activated inside AutoCAD & verified!', updated_at = datetime('now') WHERE hwid_submitted = ? AND progress_stage < 5 AND status != 'BLOCKED'"
+        ).bind(hwid).run();
+
+        return jsonResponse({ status: "OK", devices: hwidCount }, 200, corsHeaders);
+      }
+
+      // =====================================================================
+      // 4. OWNER ADMIN ENDPOINTS (Strict Constant-Time Bearer ADMIN_SECRET)
+      // =====================================================================
+      if (path.startsWith("/api/v1/admin/") || path.startsWith("/api/admin/")) {
+        if (!env.ADMIN_SECRET || env.ADMIN_SECRET.length < 16) {
+          return jsonResponse({ ok: false, error: "Server misconfigured: ADMIN_SECRET not set." }, 500, corsHeaders);
+        }
+        const authHeader = request.headers.get("Authorization") || "";
+        const expected = `Bearer ${env.ADMIN_SECRET}`;
+        if (!(await timingSafeEqualStr(authHeader, expected))) {
+          return jsonResponse({ ok: false, error: "Unauthorized" }, 401, corsHeaders);
+        }
+
+        // 4A. Register / Sync a Z6-... license from Owner Studio
+        if (path === "/api/v1/admin/register-license" && request.method === "POST") {
+          const body = await safeBody(request);
+          const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
+          const wm = String(body.watermark || "").trim().toUpperCase().slice(0, 24);
+          const name = String(body.client_name || "").trim().slice(0, 120);
+          const hwid = String(body.hwid_bound || "").trim().toUpperCase().slice(0, 32);
+          const tier = VALID_TIERS.has(String(body.tier || "").toUpperCase()) ? String(body.tier).toUpperCase() : "PRO";
+          const exp = body.expires_at ? String(body.expires_at).trim().slice(0, 32) : null;
+          const notes = String(body.notes || "").trim().slice(0, 250);
+
+          if (!KEY_RE.test(key) || !name) {
+            return jsonResponse({ ok: false, error: "Valid license_key (Z6-...) and client_name are required." }, 400, corsHeaders);
           }
+
+          await env.DB.prepare(
+            `INSERT INTO licenses (license_key, watermark, client_name, tier, status, hwid_bound, expires_at, notes, updated_at)
+             VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?, ?, datetime('now'))
+             ON CONFLICT(license_key) DO UPDATE SET
+               watermark = excluded.watermark,
+               client_name = excluded.client_name,
+               tier = excluded.tier,
+               hwid_bound = excluded.hwid_bound,
+               expires_at = excluded.expires_at,
+               notes = excluded.notes,
+               updated_at = datetime('now')`
+          ).bind(key, wm, name, tier, hwid, exp, notes).run();
+
+          await syncToGoogleSheet(env, "Active Licenses", [new Date().toISOString(), wm, name, tier, hwid, key, exp || "LIFETIME", "ACTIVE", notes]);
+          return jsonResponse({ ok: true, license_key: key, watermark: wm, status: "ACTIVE" }, 200, corsHeaders);
         }
-      } catch (_) {
-        pingEl.textContent = "CLOUD API: STANDBY";
-      }
-    }
-    syncWorkerStatus();
 
-    // License Status Portal
-    const licenseForm = document.getElementById("licenseForm");
-    const licenseInput = document.getElementById("licenseInput");
-    const resultBox = document.getElementById("resultBox");
-    const checkBtn = document.getElementById("checkBtn");
+        // 4B. Publish New Version & HTTPS Download URL
+        if (path === "/api/v1/admin/update-release" && request.method === "POST") {
+          const body = await safeBody(request);
+          const lver = body.latest_version ? String(body.latest_version).trim().slice(0, 24) : null;
+          const mver = body.min_supported_version ? String(body.min_supported_version).trim().slice(0, 24) : null;
+          const durl = body.download_url ? String(body.download_url).trim().slice(0, 500) : null;
+          const rnote = body.release_notes ? String(body.release_notes).trim().slice(0, 600) : null;
 
-    function appendRow(label, value, tagClass) {
-      const row = document.createElement("div");
-      row.className = "result-row";
-      const l = document.createElement("span");
-      l.style.color = "var(--text-dim)";
-      l.textContent = label;
-      const r = document.createElement("span");
-      if (tagClass) {
-        r.className = "status-tag " + tagClass;
-      } else {
-        r.style.fontFamily = "var(--mono)";
-        r.style.fontWeight = "600";
-      }
-      r.textContent = value;
-      row.appendChild(l);
-      row.appendChild(r);
-      resultBox.appendChild(row);
-    }
-
-    licenseForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const key = licenseInput.value.trim().toUpperCase();
-      if (!key) return;
-      resultBox.style.display = "block";
-      resultBox.innerHTML = "";
-      checkBtn.disabled = true;
-      checkBtn.textContent = "Checking...";
-      try {
-        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/check-license", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ license_key: key })
-        });
-        const data = await res.json();
-        if (!data.ok) {
-          appendRow("Result", data.error || "License not found.", "st-bad");
-        } else {
-          appendRow("Status", data.status, data.status === "ACTIVE" ? "st-ok" : "st-bad");
-          appendRow("Licensed To", data.client_name);
-          appendRow("Plan Tier", data.tier);
-          appendRow("Validity", data.expires_at ? data.expires_at : "Lifetime License");
-        }
-      } catch (_) {
-        appendRow("Connection", "Unable to reach Cloudflare Worker right now.", "st-warn");
-      } finally {
-        checkBtn.disabled = false;
-        checkBtn.textContent = "Check Status";
-      }
-    });
-
-
-
-    // Live Order / Ticket Progress Tracker (INQ-XXXXXX)
-    const trackForm = document.getElementById("trackForm");
-    const trackInput = document.getElementById("trackInput");
-    const trackResult = document.getElementById("trackResult");
-    const trackBtn = document.getElementById("trackBtn");
-    const STAGES = ["Received", "Verifying", "Building License", "Ready", "Completed"];
-
-    if (trackForm) {
-      trackForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const ref = trackInput.value.trim().toUpperCase();
-        if (!ref) return;
-        trackResult.style.display = "block";
-        trackResult.innerHTML = "";
-        trackBtn.disabled = true;
-        trackBtn.textContent = "Checking...";
-        try {
-          const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/track-inquiry?ref=" + encodeURIComponent(ref));
-          const d = await res.json();
-          if (!d.ok) {
-            const p = document.createElement("div");
-            p.className = "status-tag st-bad";
-            p.textContent = d.error || "Reference code not found.";
-            trackResult.appendChild(p);
-          } else {
-            const head = document.createElement("div");
-            head.className = "result-row";
-            const hl = document.createElement("span");
-            hl.textContent = d.ref_code + " • " + d.client_name + " (" + d.plan_tier + ")";
-            hl.style.fontWeight = "600";
-            const hr = document.createElement("span");
-            hr.className = "status-tag " + (d.status === "BLOCKED" ? "st-bad" : (d.progress_stage >= 4 ? "st-ok" : "st-warn"));
-            hr.textContent = d.status.replace(/_/g, " ");
-            head.appendChild(hl); head.appendChild(hr);
-            trackResult.appendChild(head);
-
-            if (d.status !== "BLOCKED") {
-              const barWrap = document.createElement("div");
-              barWrap.style.cssText = "display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin:14px 0 10px;";
-              STAGES.forEach((lbl, idx) => {
-                const step = document.createElement("div");
-                const done = (idx + 1) <= d.progress_stage;
-                step.style.cssText = "text-align:center;padding:6px 4px;border-radius:6px;font-family:var(--mono);font-size:0.7rem;border:1px solid " +
-                  (done ? "var(--emerald)" : "var(--border)") + ";background:" +
-                  (done ? "var(--emerald-soft)" : "var(--bg)") + ";color:" + (done ? "var(--emerald)" : "var(--text-muted)") + ";";
-                step.textContent = (idx + 1) + ". " + lbl;
-                barWrap.appendChild(step);
-              });
-              trackResult.appendChild(barWrap);
-            }
-
-            const note = document.createElement("div");
-            note.style.cssText = "font-size:0.84rem;color:var(--text-dim);margin-top:6px;";
-            note.textContent = "Latest Update: " + d.status_note;
-            trackResult.appendChild(note);
+          if (durl && !durl.startsWith("https://")) {
+            return jsonResponse({ ok: false, error: "download_url must start with https://" }, 400, corsHeaders);
           }
-        } catch (_) {
-          trackResult.textContent = "Network error reaching tracker.";
-        } finally {
-          trackBtn.disabled = false;
-          trackBtn.textContent = "Track Progress";
+
+          await env.DB.prepare(
+            `UPDATE app_config SET
+              latest_version = COALESCE(?, latest_version),
+              min_supported_version = COALESCE(?, min_supported_version),
+              download_url = COALESCE(?, download_url),
+              release_notes = COALESCE(?, release_notes),
+              updated_at = datetime('now')
+             WHERE id = 1`
+          ).bind(lver, mver, durl, rnote).run();
+
+          return jsonResponse({ ok: true, message: "Release configuration updated." }, 200, corsHeaders);
         }
-      });
-    }
 
-    // Hybrid Website Inquiry Form
-    const inquiryForm = document.getElementById("inquiryForm");
-    const inqResultBox = document.getElementById("inqResultBox");
-    const inqBtn = document.getElementById("inqBtn");
-    if (inquiryForm) {
-      inquiryForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        inqResultBox.style.display = "block";
-        inqResultBox.innerHTML = "";
-        inqBtn.disabled = true;
-        inqBtn.textContent = "Submitting...";
-        const payload = {
-          client_name: document.getElementById("inqName").value.trim(),
-          contact_info: document.getElementById("inqContact").value.trim(),
-          cad_version: document.getElementById("inqCad").value,
-          plan_tier: document.getElementById("inqTier").value,
-          payment_method: document.getElementById("inqPay").value,
-          hwid_submitted: document.getElementById("inqHwid").value.trim().toUpperCase(),
-          notes: document.getElementById("inqNotes").value.trim(),
-          website_hp: (document.getElementById("inqHp") ? document.getElementById("inqHp").value : "")
-        };
-        try {
-          const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/inquiry", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-          });
-          const data = await res.json();
-          const row = document.createElement("div");
-          row.className = "result-row";
-          const l = document.createElement("span");
-          l.style.color = "var(--text-dim)";
-          l.textContent = data.ok ? "Reference Code" : "Error";
-          const r = document.createElement("span");
-          r.className = "status-tag " + (data.ok ? "st-ok" : "st-bad");
-          r.textContent = data.ok ? (data.ref_code + " — Paste in Discord Ticket!") : (data.error || "Failed");
-          row.appendChild(l); row.appendChild(r);
-          inqResultBox.appendChild(row);
-          if (data.ok) inquiryForm.reset();
-        } catch (_) {
-          const row = document.createElement("div");
-          row.className = "result-row";
-          row.textContent = "Network error reaching Cloudflare Worker.";
-          inqResultBox.appendChild(row);
-        } finally {
-          inqBtn.disabled = false;
-          inqBtn.textContent = "Submit Inquiry & Get Reference Code";
+        // 4C. Set License Status (Strict enum + 404 if not found)
+        if (path === "/api/v1/admin/set-status" && request.method === "POST") {
+          const body = await safeBody(request);
+          const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
+          const status = String(body.status || "").trim().toUpperCase();
+          if (!KEY_RE.test(key) || !VALID_STATUSES.has(status)) {
+            return jsonResponse({ ok: false, error: "Valid license_key and status (ACTIVE|SUSPENDED|REVOKED) required." }, 400, corsHeaders);
+          }
+          const res = await env.DB.prepare(
+            "UPDATE licenses SET status = ?, updated_at = datetime('now') WHERE license_key = ?"
+          ).bind(status, key).run();
+          if (!res.meta || res.meta.changes === 0) {
+            return jsonResponse({ ok: false, error: "License key not found." }, 404, corsHeaders);
+          }
+          return jsonResponse({ ok: true, license_key: key, status }, 200, corsHeaders);
         }
-      });
+
+        // 4D. List Licenses
+        if (path === "/api/v1/admin/list-licenses" && request.method === "GET") {
+          const { results } = await env.DB.prepare(
+            "SELECT license_key, watermark, client_name, tier, status, hwid_bound, expires_at, created_at FROM licenses ORDER BY id DESC LIMIT 100"
+          ).all();
+          return jsonResponse({ ok: true, licenses: results || [] }, 200, corsHeaders);
+        }
+
+        // 4D-2. List & Update Website Inquiries
+        if (path === "/api/v1/admin/inquiries" && request.method === "GET") {
+          const { results } = await env.DB.prepare(
+            "SELECT ref_code, client_name, contact_info, cad_version, hwid_submitted, plan_tier, payment_method, notes, status, progress_stage, status_note, created_at FROM inquiries ORDER BY id DESC LIMIT 100"
+          ).all();
+          return jsonResponse({ ok: true, inquiries: results || [] }, 200, corsHeaders);
+        }
+
+        if (path === "/api/v1/admin/inquiry-status" && request.method === "POST") {
+          const body = await safeBody(request);
+          const ref = String(body.ref_code || "").trim().toUpperCase().slice(0, 16);
+          const st = String(body.status || "").trim().toUpperCase();
+          const STAGE_MAP = {
+            RECEIVED: [1, "Inquiry received and queued for review."],
+            VERIFYING_PAYMENT: [2, "Verifying payment and workstation details."],
+            BUILDING_LICENSE: [3, "Preparing your hardware-bound ZGE package."],
+            READY_FOR_DELIVERY: [4, "Package ready — delivered via private Discord or Messenger."],
+            COMPLETED: [5, "License activated and verified. Welcome to ZGE Suite!"],
+            BLOCKED: [0, "Request declined or blocked by administrator."]
+          };
+          if (!ref || !STAGE_MAP[st]) {
+            return jsonResponse({ ok: false, error: "Valid ref_code and stage status required." }, 400, corsHeaders);
+          }
+          const [stageNum, defaultNote] = STAGE_MAP[st];
+          const note = String(body.status_note || defaultNote).trim().slice(0, 220);
+          const hwidBackfill = HWID_RE.test(String(body.hwid_submitted || "").trim().toUpperCase())
+            ? String(body.hwid_submitted).trim().toUpperCase() : "";
+          await env.DB.prepare(
+            "UPDATE inquiries SET status = ?, progress_stage = ?, status_note = ?, hwid_submitted = CASE WHEN ? != '' THEN ? ELSE hwid_submitted END, updated_at = datetime('now') WHERE ref_code = ?"
+          ).bind(st, stageNum, note, hwidBackfill, hwidBackfill, ref).run();
+          await sendDiscordInquiry(env, `Status Updated: ${ref}`, `New Stage: ${st} (${stageNum}/5)\nNote: ${note}`, st === "BLOCKED" ? 0xf43f5e : 0x10b981);
+          return jsonResponse({ ok: true, ref_code: ref, status: st, progress_stage: stageNum, status_note: note }, 200, corsHeaders);
+        }
+
+        // 4D-3. HWID Blocklist Management (Ban / Unban specific PCs)
+        if (path === "/api/v1/admin/block-hwid" && request.method === "POST") {
+          const body = await safeBody(request);
+          const hwid = String(body.hwid || "").trim().toUpperCase().slice(0, 32);
+          const reason = String(body.reason || "Unauthorized sharing or tampering").trim().slice(0, 200);
+          if (!HWID_RE.test(hwid)) {
+            return jsonResponse({ ok: false, error: "Valid HWID (ZGE-XXXX-XXXX-XXXX) required." }, 400, corsHeaders);
+          }
+          await env.DB.prepare(
+            "INSERT INTO blocked_hwids (hwid, reason, blocked_at) VALUES (?, ?, datetime('now')) ON CONFLICT(hwid) DO UPDATE SET reason = excluded.reason, blocked_at = datetime('now')"
+          ).bind(hwid, reason).run();
+          await env.DB.prepare("UPDATE licenses SET status = 'REVOKED', updated_at = datetime('now') WHERE hwid_bound = ?").bind(hwid).run();
+          return jsonResponse({ ok: true, hwid, status: "BLOCKED" }, 200, corsHeaders);
+        }
+
+        if (path === "/api/v1/admin/unblock-hwid" && request.method === "POST") {
+          const body = await safeBody(request);
+          const hwid = String(body.hwid || "").trim().toUpperCase().slice(0, 32);
+          if (!HWID_RE.test(hwid)) {
+            return jsonResponse({ ok: false, error: "Valid HWID required." }, 400, corsHeaders);
+          }
+          await env.DB.prepare("DELETE FROM blocked_hwids WHERE hwid = ?").bind(hwid).run();
+          return jsonResponse({ ok: true, hwid, status: "UNBLOCKED" }, 200, corsHeaders);
+        }
+
+        if (path === "/api/v1/admin/blocked-hwids" && request.method === "GET") {
+          const { results } = await env.DB.prepare("SELECT hwid, reason, blocked_at FROM blocked_hwids ORDER BY blocked_at DESC LIMIT 100").all();
+          return jsonResponse({ ok: true, blocked: results || [] }, 200, corsHeaders);
+        }
+
+        // 4D-4. System Connection Health Check (checks D1 tables + configured secrets without exposing values)
+        if (path === "/api/v1/admin/health" && request.method === "GET") {
+          const tbls = (await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()).results || [];
+          const names = tbls.map(t => t.name);
+          const required = ["app_config", "licenses", "heartbeats", "piracy_alerts", "rate_limits", "inquiries", "blocked_hwids"];
+          const missing = required.filter(r => !names.includes(r));
+          return jsonResponse({
+            ok: missing.length === 0,
+            d1_tables_found: names,
+            missing_tables: missing,
+            security_webhook_configured: String(env.DISCORD_WEBHOOK_URL || "").startsWith("https://discord.com/api/webhooks/"),
+            inquiry_webhook_configured: String(env.DISCORD_INQUIRY_WEBHOOK_URL || "").startsWith("https://discord.com/api/webhooks/"),
+            google_sheet_sync_configured: String(env.GOOGLE_SHEET_WEBHOOK_URL || "").startsWith("https://script.google.com/macros/s/") && Boolean(env.GOOGLE_SHEET_SECRET)
+          }, 200, corsHeaders);
+        }
+
+        // 4E. Owner Studio Section 4 & monitor_dashboard.html Compatibility (/api/admin/logs & /api/admin/revoke)
+        if (path === "/api/admin/logs" && request.method === "GET") {
+          const alerts = (await env.DB.prepare("SELECT * FROM piracy_alerts ORDER BY detected_at DESC LIMIT 100").all()).results || [];
+          const heartbeats = (await env.DB.prepare("SELECT * FROM heartbeats ORDER BY seen_at DESC LIMIT 100").all()).results || [];
+          return jsonResponse({ ok: true, alerts, heartbeats }, 200, corsHeaders);
+        }
+
+        if (path === "/api/admin/revoke" && request.method === "POST") {
+          const body = await safeBody(request);
+          const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
+          const wm = String(body.watermark || "").trim().toUpperCase().slice(0, 24);
+          if (!KEY_RE.test(key)) {
+            return jsonResponse({ ok: false, error: "Invalid license_key." }, 400, corsHeaders);
+          }
+          await env.DB.prepare(
+            `INSERT INTO licenses (license_key, watermark, client_name, status, updated_at)
+             VALUES (?, ?, 'Revoked Record', 'REVOKED', datetime('now'))
+             ON CONFLICT(license_key) DO UPDATE SET status = 'REVOKED', updated_at = datetime('now')`
+          ).bind(key, wm).run();
+          return jsonResponse({ ok: true, license_key: key, status: "REVOKED" }, 200, corsHeaders);
+        }
+      }
+
+      return jsonResponse({ ok: false, error: "Not found" }, 404, corsHeaders);
+    } catch (err) {
+      return jsonResponse({ ok: false, error: "Internal server error" }, 500, corsHeaders);
     }
+  }
+};
 
-    // Interactive 84-Command Explorer
-    const COMMANDS = [
-      { cmd: "PLOTTEXT",   cat: "plot",     desc: "Paste-to-plot raw TCT technical description text directly into CAD" },
-      { cmd: "PLOTBDDLG",  cat: "plot",     desc: "Interactive bearing & distance table plotter with tie-line support" },
-      { cmd: "CURVETD",    cat: "plot",     desc: "Curved road/boundary arc technical description generator" },
-      { cmd: "LBLBD",      cat: "plot",     desc: "Auto-label lot bearings, distances, and area in PRS92/PTM" },
-      { cmd: "SUBPAR",     cat: "subdiv",   desc: "Exact-area parallel subdivision cutter" },
-      { cmd: "SUBHINGE",   cat: "subdiv",   desc: "Hinge/pivot point exact-area lot splitter" },
-      { cmd: "SUBRROW",    cat: "subdiv",   desc: "Road Right-of-Way & alley area deduction builder" },
-      { cmd: "CHKTOPO",    cat: "subdiv",   desc: "Automated gap, overlap, and sliver topology checker" },
-      { cmd: "PRINTLDC",   cat: "lmb",      desc: "Print-ready HTML/PDF Survey Return Dossier (LDC + TD + Cert)" },
-      { cmd: "PLOTPDF",    cat: "lmb",      desc: "1-click DWG-to-PDF window plotter (20x30 / A3 / A4 / Legal)" },
-      { cmd: "EXPXML",     cat: "lmb",      desc: "DENR-LMB eSurvey XML export with tie-point validation" },
-      { cmd: "LMBQA",      cat: "lmb",      desc: "DENR-LMB pre-submission quality assurance gate" },
-      { cmd: "IMPRTKDLG",  cat: "gis",      desc: "Visual RTK / Total Station CSV point importer" },
-      { cmd: "IMPQGIS",    cat: "gis",      desc: "Import QGIS GeoJSON & KML polygons directly into PRS92" },
-      { cmd: "HELMERT2D",  cat: "gis",      desc: "2D Helmert best-fit transformation with RMSE report" },
-      { cmd: "VOLGRID",    cat: "gis",      desc: "Cut & fill earthwork volume grid calculator" },
-      { cmd: "LOTBOOK",    cat: "assessor", desc: "DHSUD / BP 220 subdivision land allocation table" },
-      { cmd: "TAXLOT",     cat: "assessor", desc: "Assessor tax parcel PIN tagger & TMCR CSV export" },
-      { cmd: "QUICKCHECK", cat: "assessor", desc: "1-click pre-print metadata, CRS, and orientation audit" },
-      { cmd: "ZGEACT",     cat: "assessor", desc: "5-factor offline hardware license activation dialog" }
-    ];
+function jsonResponse(data, status = 200, headers = {}) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { "Content-Type": "application/json", ...headers }
+  });
+}
 
-    const cmdGrid = document.getElementById("cmdGrid");
-    const cmdFilters = document.getElementById("cmdFilters");
+async function safeBody(request) {
+  try {
+    const obj = await request.json();
+    return obj && typeof obj === "object" ? obj : {};
+  } catch {
+    return {};
+  }
+}
 
-    function renderCommands(cat) {
-      cmdGrid.innerHTML = "";
-      const list = cat === "all" ? COMMANDS.slice(0, 12) : COMMANDS.filter(c => c.cat === cat);
-      list.forEach(item => {
-        const div = document.createElement("div");
-        div.className = "cmd-item";
-        const n = document.createElement("div");
-        n.className = "cmd-name";
-        n.textContent = item.cmd;
-        const d = document.createElement("div");
-        d.className = "cmd-desc";
-        d.textContent = item.desc;
-        div.appendChild(n);
-        div.appendChild(d);
-        cmdGrid.appendChild(div);
-      });
-    }
-    renderCommands("all");
+async function timingSafeEqualStr(a, b) {
+  const enc = new TextEncoder();
+  const ha = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(a)));
+  const hb = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(b)));
+  let diff = 0;
+  for (let i = 0; i < ha.length; i++) diff |= ha[i] ^ hb[i];
+  return diff === 0;
+}
 
-    cmdFilters.addEventListener("click", (e) => {
-      const btn = e.target.closest(".filter-btn");
-      if (!btn) return;
-      cmdFilters.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
-      btn.classList.add("active");
-      renderCommands(btn.dataset.cat);
+async function allowRate(db, bucketKey, maxHits, windowSec) {
+  const now = Math.floor(Date.now() / 1000);
+  const row = await db.prepare("SELECT hits, window_start FROM rate_limits WHERE bucket_key = ?").bind(bucketKey).first();
+  if (!row || now - row.window_start >= windowSec) {
+    await db.prepare(
+      "INSERT INTO rate_limits (bucket_key, hits, window_start) VALUES (?, 1, ?) ON CONFLICT(bucket_key) DO UPDATE SET hits = 1, window_start = excluded.window_start"
+    ).bind(bucketKey, now).run();
+    return true;
+  }
+  if (row.hits >= maxHits) return false;
+  await db.prepare("UPDATE rate_limits SET hits = hits + 1 WHERE bucket_key = ?").bind(bucketKey).run();
+  return true;
+}
+
+function maskName(name) {
+  if (!name || name.length < 3) return "***";
+  return name[0] + "*".repeat(Math.min(name.length - 2, 12)) + name[name.length - 1];
+}
+
+async function sendDiscordInquiry(env, title, description, color = 0x38bdf8) {
+  const hook = String(env.DISCORD_INQUIRY_WEBHOOK_URL || "").trim();
+  if (!hook.startsWith("https://discord.com/api/webhooks/")) return;
+  try {
+    await fetch(hook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        embeds: [{ title: `ZGE Inquiry: ${title}`, description, color, timestamp: new Date().toISOString() }]
+      })
     });
+  } catch (_) {}
+}
 
-    // Interactive Cadastral Traverse Canvas Animation
-    const canvas = document.getElementById("surveyCanvas");
-    const wrap = document.getElementById("canvasWrap");
-    const ctx = canvas.getContext("2d");
-    const courseReadout = document.getElementById("courseReadout");
-    const hudN = document.getElementById("hudN");
-    const hudE = document.getElementById("hudE");
-
-    const ptsNorm = [
-      { x: 0.14, y: 0.78, label: "BLLM 1", isTie: true },
-      { x: 0.34, y: 0.62, label: "1", bearing: "N 54°12' E, 42.80m" },
-      { x: 0.66, y: 0.24, label: "2", bearing: "N 38°40' E, 58.15m" },
-      { x: 0.84, y: 0.52, label: "3", bearing: "S 31°05' E, 34.90m" },
-      { x: 0.54, y: 0.76, label: "4", bearing: "S 51°22' W, 46.10m" },
-      { x: 0.34, y: 0.62, label: "1", bearing: "N 52°18' W, 29.40m" }
-    ];
-
-    let animProgress = 0;
-    let rafId = null;
-    let mousePos = null;
-
-    function resizeCanvas() {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const rect = wrap.getBoundingClientRect();
-      canvas.width = Math.max(300, Math.floor(rect.width * dpr));
-      canvas.height = Math.max(240, Math.floor(rect.height * dpr));
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      drawSurvey(animProgress);
-    }
-
-    function drawSurvey(progress) {
-      const w = wrap.clientWidth || 420;
-      const h = wrap.clientHeight || 320;
-      ctx.clearRect(0, 0, w, h);
-
-      // Instrument grid
-      ctx.strokeStyle = "rgba(148, 163, 184, 0.08)";
-      ctx.lineWidth = 1;
-      for (let x = 24; x < w; x += 40) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-      }
-      for (let y = 24; y < h; y += 40) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-      }
-
-      // North Arrow (top-right)
-      ctx.save();
-      ctx.translate(w - 34, 38);
-      ctx.strokeStyle = "#d4a353";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.moveTo(0, 16); ctx.lineTo(0, -14); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(0, -15); ctx.lineTo(5, -5); ctx.stroke();
-      ctx.fillStyle = "#d4a353";
-      ctx.font = "600 10px 'JetBrains Mono', monospace";
-      ctx.textAlign = "center";
-      ctx.fillText("N", 0, -19);
-      ctx.restore();
-
-      const totalSegs = ptsNorm.length - 1;
-      const curSegFloat = progress * totalSegs;
-
-      // Polygon fill once closed
-      if (progress >= 0.98) {
-        ctx.fillStyle = "rgba(212, 163, 83, 0.08)";
-        ctx.beginPath();
-        for (let i = 1; i < ptsNorm.length; i++) {
-          const px = ptsNorm[i].x * w, py = ptsNorm[i].y * h;
-          if (i === 1) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      // Draw segments progressively
-      for (let i = 0; i < totalSegs; i++) {
-        const segP = Math.max(0, Math.min(1, curSegFloat - i));
-        if (segP <= 0) continue;
-        const a = ptsNorm[i], b = ptsNorm[i + 1];
-        const x1 = a.x * w, y1 = a.y * h;
-        const x2 = x1 + (b.x * w - x1) * segP;
-        const y2 = y1 + (b.y * h - y1) * segP;
-
-        ctx.save();
-        if (i === 0) {
-          ctx.setLineDash([5, 5]);
-          ctx.strokeStyle = "#38bdf8";
-          ctx.lineWidth = 1.4;
-        } else {
-          ctx.strokeStyle = "#d4a353";
-          ctx.lineWidth = 2;
-        }
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-        ctx.restore();
-
-        if (segP > 0.75 && b.bearing) {
-          const offsets = [
-            { dx: -16, dy: 16 },  // Tie line (below dashed line)
-            { dx: -26, dy: -10 }, // 1 -> 2 (upper-left)
-            { dx: 34,  dy: -6 },  // 2 -> 3 (upper-right)
-            { dx: 24,  dy: 16 },  // 3 -> 4 (lower-right)
-            { dx: 18,  dy: -10 }  // 4 -> 1 (cleanly inside)
-          ];
-          const off = offsets[i] || { dx: 0, dy: -8 };
-          const mx = (x1 + b.x * w) / 2 + off.dx;
-          const my = (y1 + b.y * h) / 2 + off.dy;
-          ctx.fillStyle = i === 0 ? "#38bdf8" : "#cbd5e1";
-          ctx.font = "500 10px 'JetBrains Mono', monospace";
-          ctx.textAlign = "center";
-          ctx.fillText(b.bearing, mx, my);
-        }
-      }
-
-      // Corner monuments
-      for (let i = 0; i < ptsNorm.length - 1; i++) {
-        if (curSegFloat < i - 0.15) continue;
-        const p = ptsNorm[i];
-        const px = p.x * w, py = p.y * h;
-        ctx.fillStyle = p.isTie ? "#38bdf8" : "#070b12";
-        ctx.strokeStyle = p.isTie ? "#38bdf8" : "#d4a353";
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.arc(px, py, p.isTie ? 4.5 : 4, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = p.isTie ? "#38bdf8" : "#f8fafc";
-        ctx.font = "600 10px 'JetBrains Mono', monospace";
-        ctx.textAlign = "left";
-        ctx.fillText(p.label, px + 7, py - 6);
-      }
-
-      // Interactive Crosshair
-      if (mousePos) {
-        ctx.strokeStyle = "rgba(56, 189, 248, 0.35)";
-        ctx.lineWidth = 1;
-        ctx.setLineDash([3, 3]);
-        ctx.beginPath(); ctx.moveTo(mousePos.x, 0); ctx.lineTo(mousePos.x, h); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, mousePos.y); ctx.lineTo(w, mousePos.y); ctx.stroke();
-        ctx.setLineDash([]);
-      }
-    }
-
-    function startPlotAnimation() {
-      if (rafId) cancelAnimationFrame(rafId);
-      animProgress = 0;
-      const startTime = performance.now();
-      const duration = 2600;
-      function step(now) {
-        animProgress = Math.min(1, (now - startTime) / duration);
-        const segIdx = Math.min(ptsNorm.length - 1, Math.floor(animProgress * (ptsNorm.length - 1)) + 1);
-        courseReadout.textContent = animProgress >= 1
-          ? "CLOSED • 0.000m ERR"
-          : (ptsNorm[segIdx].bearing || "PLOTTING TIE LINE...");
-        drawSurvey(animProgress);
-        if (animProgress < 1) {
-          rafId = requestAnimationFrame(step);
-        }
-      }
-      rafId = requestAnimationFrame(step);
-    }
-
-    wrap.addEventListener("mousemove", (e) => {
-      const rect = wrap.getBoundingClientRect();
-      mousePos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-      const northing = (1815480 - mousePos.y * 0.32).toFixed(3);
-      const easting = (458840 + mousePos.x * 0.35).toFixed(3);
-      hudN.textContent = northing;
-      hudE.textContent = easting;
-      drawSurvey(animProgress);
+async function sendDiscordAlert(env, title, description, color = 0xd4a353) {
+  const hook = String(env.DISCORD_WEBHOOK_URL || "").trim();
+  if (!hook.startsWith("https://discord.com/api/webhooks/")) return;
+  try {
+    await fetch(hook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        embeds: [{ title: `ZGE Security: ${title}`, description, color, timestamp: new Date().toISOString() }]
+      })
     });
-    wrap.addEventListener("mouseleave", () => { mousePos = null; drawSurvey(animProgress); });
-    document.getElementById("replayPlotBtn").addEventListener("click", startPlotAnimation);
-    window.addEventListener("resize", resizeCanvas);
+  } catch (_) {}
+}
 
-    // Scroll Reveal Observer
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("visible"); io.unobserve(en.target); } });
-    }, { threshold: 0.12 });
-    document.querySelectorAll(".reveal").forEach(el => io.observe(el));
-
-    window.addEventListener("load", () => { resizeCanvas(); startPlotAnimation(); });
-    resizeCanvas();
-    startPlotAnimation();
-  </script>
-</body>
-</html>
+async function syncToGoogleSheet(env, sheetName, rowValues) {
+  const url = String(env.GOOGLE_SHEET_WEBHOOK_URL || "").trim();
+  const sec = String(env.GOOGLE_SHEET_SECRET || "").trim();
+  if (!url.startsWith("https://script.google.com/macros/s/")) return;
+  try {
+    await fetch(url, {
+      method: "POST",
+      redirect: "follow",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ secret: sec, sheet: sheetName, row: rowValues })
+    });
+  } catch (_) {}
+}
