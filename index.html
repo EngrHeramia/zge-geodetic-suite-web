@@ -1,573 +1,1147 @@
-// ZGE Complete Geodetic & GIS Suite v7.0 Ironclad — Hardened Cloudflare Worker
-// Author: Wendell Heramia | Option 1 (Offline-First Z6 Hardware Tokens + Cloud Monitor/Updates/Portal)
-// Fixes: constant-time ADMIN_SECRET auth (never accepts undefined), strict input validation,
-//        rate limiting on public endpoints, deduplicated D1 heartbeats, HTTPS URL validation,
-//        and native /version.json + /api/heartbeat compatibility with ZGE_License.lsp v7.0.
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ZGE Geodetic Suite v7.7 — Tactical AutoCAD Automation for Philippine GEs</title>
+<meta name="description" content="Proprietary 100% offline-first Philippine Geodetic Engineering &amp; GIS automation natively inside AutoCAD and Civil 3D (2013-2026+). Built by Wendell Heramia." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #05070c;
+    --bg2: #080c15;
+    --panel: rgba(13, 19, 32, 0.86);
+    --panel-solid: #0d1320;
+    --border: rgba(148, 163, 184, 0.14);
+    --border-em: rgba(16, 185, 129, 0.42);
+    --border-au: rgba(245, 158, 11, 0.40);
+    --text: #f8fafc;
+    --dim: #94a3b8;
+    --em: #10b981;
+    --em-hi: #34d399;
+    --au: #f59e0b;
+    --au-hi: #fbbf24;
+    --cyan: #38bdf8;
+    --danger: #f43f5e;
+    --display: 'Chakra Petch', system-ui, sans-serif;
+    --sans: 'Inter', system-ui, -apple-system, sans-serif;
+    --mono: 'JetBrains Mono', Consolas, monospace;
+  }
 
-const KEY_RE  = /^(Z6-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}|ZGE-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4})$/;
-const HWID_RE = /^ZGE-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/;
-const VALID_STATUSES = new Set(["ACTIVE", "SUSPENDED", "REVOKED"]);
-const VALID_TIERS = new Set(["STANDARD", "PRO", "ENTERPRISE"]);
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 15.5px; line-height: 1.6;
+    -webkit-font-smoothing: antialiased; overflow-x: hidden;
+  }
+  /* Subtle precision tactical grid backdrop */
+  body::before {
+    content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(16, 185, 129, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(16, 185, 129, 0.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+  body::after {
+    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(ellipse 65% 45% at 78% 8%, rgba(16, 185, 129, 0.13), transparent 70%),
+      radial-gradient(ellipse 50% 40% at 15% 85%, rgba(245, 158, 11, 0.07), transparent 70%);
+  }
 
-export default {
-  async fetch(request, env) {
-    const url = new URL(request.url);
-    const path = url.pathname;
+  a { color: inherit; text-decoration: none; }
+  code { font-family: var(--mono); font-size: 0.84em; color: var(--em-hi); background: rgba(16,185,129,0.1); padding: 2px 6px; border-radius: 5px; }
 
-    const corsHeaders = {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  /* Top Kinetic Reading Bar */
+  #scrollBar {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0%; z-index: 1200;
+    background: linear-gradient(90deg, var(--em), var(--au), var(--cyan));
+    box-shadow: 0 0 12px rgba(16, 185, 129, 0.7); pointer-events: none;
+  }
+
+  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 22px; }
+
+  /* Glass Tactical Header */
+  header.nav {
+    position: sticky; top: 0; z-index: 900;
+    background: rgba(5, 7, 12, 0.82); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-in { display: flex; align-items: center; justify-content: space-between; height: 66px; gap: 16px; }
+  .brand { display: flex; align-items: center; gap: 11px; font-family: var(--display); font-weight: 700; font-size: 1.15rem; letter-spacing: 0.02em; }
+  .brand-hex {
+    width: 34px; height: 34px; border-radius: 9px; position: relative;
+    background: linear-gradient(135deg, var(--em), #059669);
+    display: grid; place-items: center; color: #022c22; font-family: var(--mono); font-weight: 800; font-size: 0.82rem;
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
+  }
+  .nav-links { display: flex; gap: 24px; font-size: 0.86rem; font-weight: 500; color: var(--dim); }
+  .nav-links a { transition: color 0.16s; }
+  .nav-links a:hover { color: var(--em-hi); }
+  .nav-right { display: flex; align-items: center; gap: 10px; }
+  .live-pill {
+    font-family: var(--mono); font-size: 0.72rem; color: var(--em-hi);
+    background: rgba(16, 185, 129, 0.1); border: 1px solid var(--border-em);
+    padding: 5px 11px; border-radius: 99px; display: inline-flex; align-items: center; gap: 7px;
+  }
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--em);
+    box-shadow: 0 0 10px var(--em); animation: zgePulse 1.8s ease-in-out infinite;
+  }
+  @keyframes zgePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.82); } }
+  @media (max-width: 820px) { .nav-links, .live-pill { display: none; } }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 11px 20px; border-radius: 9px; font-family: var(--display); font-weight: 700;
+    font-size: 0.9rem; letter-spacing: 0.02em; cursor: pointer; border: 1px solid transparent;
+    transition: transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease, border-color 0.2s, background 0.2s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-em {
+    background: linear-gradient(135deg, var(--em), #059669); color: #022c22;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.28);
+  }
+  .btn-em:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(16, 185, 129, 0.42); }
+  .btn-ghost {
+    background: rgba(255, 255, 255, 0.03); color: var(--text); border-color: var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--em); color: var(--em-hi); transform: translateY(-2px); }
+  .btn-sm { padding: 7px 13px; font-size: 0.79rem; border-radius: 7px; }
+
+  /* Hero */
+  .hero { padding: 62px 0 58px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 38px; align-items: center; }
+  @media (max-width: 920px) { .hero-grid { grid-template-columns: 1fr; } }
+
+  .kicker-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-family: var(--mono); font-size: 0.74rem; color: var(--au-hi);
+    background: rgba(245, 158, 11, 0.10); border: 1px solid var(--border-au);
+    padding: 5px 12px; border-radius: 99px; margin-bottom: 16px;
+  }
+  h1 {
+    font-family: var(--display); font-size: clamp(2.35rem, 4.5vw, 3.5rem);
+    line-height: 1.04; letter-spacing: -0.02em; margin: 0 0 16px; text-wrap: balance;
+  }
+  .grad-text {
+    background: linear-gradient(95deg, #34d399 0%, #38bdf8 55%, #fbbf24 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .hero-lead { font-size: 1.02rem; color: var(--dim); margin: 0 0 22px; max-width: 52ch; }
+  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+
+  .compat-strip {
+    padding: 11px 14px; border-radius: 10px; font-size: 0.81rem; color: #cbd5e1;
+    background: rgba(13, 19, 32, 0.9); border: 1px solid var(--border);
+    border-left: 3px solid var(--em); max-width: 56ch;
+  }
+  .compat-strip strong { color: var(--em-hi); }
+
+  .hero-kpis {
+    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
+  }
+  .kpi-v { font-family: var(--display); font-size: 1.45rem; font-weight: 700; color: var(--text); line-height: 1.1; }
+  .kpi-k { font-family: var(--mono); font-size: 0.71rem; color: var(--dim); margin-top: 3px; }
+
+  /* Interactive Tactical Blueprint Viewport (Hero Right) */
+  .viewport-shell {
+    background: var(--panel-solid); border: 1px solid rgba(16, 185, 129, 0.28);
+    border-radius: 16px; overflow: hidden;
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.62), 0 0 40px rgba(16, 185, 129, 0.08);
+  }
+  .vp-top {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+    padding: 10px 14px; background: #090e18; border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 0.73rem; color: var(--em-hi);
+  }
+  .vp-modes {
+    display: flex; gap: 5px; padding: 9px 12px; background: #0c121f; border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .vp-mode-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--dim);
+    padding: 5px 10px; border-radius: 6px; font-family: var(--mono); font-size: 0.72rem;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .vp-mode-btn.active, .vp-mode-btn:hover { background: rgba(16, 185, 129, 0.16); border-color: var(--em); color: var(--em-hi); font-weight: 600; }
+  .vp-canvas-wrap { position: relative; height: 295px; background: #050912; }
+  #surveyCanvas { width: 100%; height: 100%; display: block; }
+  .vp-hud {
+    position: absolute; bottom: 10px; left: 12px; right: 12px;
+    display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
+    background: rgba(5, 7, 12, 0.86); backdrop-filter: blur(8px);
+    border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px;
+    font-family: var(--mono); font-size: 0.72rem; color: #cbd5e1;
+  }
+
+  /* Sections */
+  section.sec { padding: 68px 0; border-top: 1px solid var(--border); }
+  section.sec.alt { background: rgba(8, 12, 21, 0.78); }
+  .sec-head { max-width: 660px; margin-bottom: 30px; }
+  .sec-head h2 {
+    font-family: var(--display); font-size: clamp(1.65rem, 3vw, 2.25rem);
+    letter-spacing: -0.015em; margin: 0 0 8px; line-height: 1.15;
+  }
+  .sec-head p { margin: 0; color: var(--dim); font-size: 0.94rem; }
+
+  /* Scroll Reveal */
+  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); }
+  .reveal.in { opacity: 1; transform: translateY(0); }
+
+  /* Tactical Spotlight Bento Grid (IP-Protected — Zero Command Names Exposed!) */
+  .bento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+  @media (max-width: 880px) { .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 600px) { .bento { grid-template-columns: 1fr; } }
+
+  .spot-card {
+    position: relative; overflow: hidden;
+    background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px;
+    transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), border-color 0.22s ease, box-shadow 0.22s ease;
+  }
+  .spot-card::before {
+    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.25s;
+    background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), rgba(16, 185, 129, 0.14), transparent 65%);
+  }
+  .spot-card:hover { transform: translateY(-4px); border-color: var(--border-em); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); }
+  .spot-card:hover::before { opacity: 1; }
+  .card-tag {
+    display: inline-block; font-family: var(--mono); font-size: 0.7rem; font-weight: 600;
+    color: var(--em-hi); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
+    padding: 3px 8px; border-radius: 6px; margin-bottom: 12px;
+  }
+  .card-tag.gold { color: var(--au-hi); background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.28); }
+  .spot-card h3 { font-family: var(--display); font-size: 1.08rem; margin: 0 0 8px; color: var(--text); }
+  .spot-card p { margin: 0; font-size: 0.85rem; color: var(--dim); line-height: 1.55; }
+
+  /* Interactive Time-Saved Estimator Strip */
+  .roi-box {
+    margin-top: 22px; background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(13,19,32,0.92));
+    border: 1px solid var(--border-em); border-radius: 14px; padding: 22px;
+    display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: center;
+  }
+  @media (max-width: 820px) { .roi-box { grid-template-columns: 1fr; } }
+  .roi-slider { width: 100%; accent-color: var(--em); cursor: pointer; margin-top: 10px; }
+  .roi-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .roi-pill { background: rgba(5, 7, 12, 0.75); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+  .roi-num { font-family: var(--display); font-size: 1.65rem; font-weight: 700; color: var(--em-hi); line-height: 1.1; }
+  .roi-sub { font-family: var(--mono); font-size: 0.72rem; color: var(--dim); margin-top: 4px; }
+
+  /* Architecture Proof Strip */
+  .proof-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+  @media (max-width: 860px) { .proof-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 520px) { .proof-grid { grid-template-columns: 1fr; } }
+  .proof-item {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
+  }
+  .proof-num { font-family: var(--display); font-size: 1.4rem; font-weight: 700; color: var(--au-hi); }
+  .proof-lbl { font-size: 0.82rem; color: var(--dim); margin-top: 4px; }
+
+  /* Unified 3-Tab Client Portal */
+  .portal-grid { display: grid; grid-template-columns: 1.32fr 0.68fr; gap: 22px; align-items: start; }
+  @media (max-width: 880px) { .portal-grid { grid-template-columns: 1fr; } }
+  .panel-box { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
+  .tab-bar { display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+  .tab-btn {
+    background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--dim);
+    padding: 8px 15px; border-radius: 8px; font-family: var(--display); font-weight: 700;
+    font-size: 0.84rem; cursor: pointer; transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--em); color: #022c22; border-color: var(--em); }
+  .tab-pane { display: none; }
+  .tab-pane.active { display: block; }
+  .f-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+  input.fld, select.fld {
+    width: 100%; background: #050810; border: 1px solid var(--border); color: var(--text);
+    padding: 10px 12px; border-radius: 8px; font-size: 0.86rem; font-family: inherit;
+    transition: border-color 0.16s, box-shadow 0.16s;
+  }
+  input.fld:focus, select.fld:focus { outline: none; border-color: var(--em); box-shadow: 0 0 0 3px rgba(16,185,129,0.16); }
+  .res-box {
+    display: none; margin-top: 14px; padding: 14px; border-radius: 10px;
+    background: #07131a; border: 1px solid var(--border-em); font-size: 0.85rem;
+  }
+  .step-row { display: flex; gap: 12px; margin-bottom: 16px; }
+  .step-n {
+    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+    background: rgba(16,185,129,0.12); border: 1px solid var(--border-em); color: var(--em-hi);
+    font-family: var(--mono); font-size: 0.78rem; font-weight: 700; display: grid; place-items: center;
+  }
+  .pay-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .pay-tag { font-family: var(--mono); font-size: 0.72rem; padding: 4px 9px; border-radius: 6px; background: #09101d; border: 1px solid var(--border); color: #cbd5e1; }
+  .stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 12px 0; }
+  @media (max-width: 600px) { .stages { grid-template-columns: 1fr; } }
+  .st-step { padding: 7px; border-radius: 6px; font-size: 0.72rem; text-align: center; background: #0b1220; border: 1px solid var(--border); color: var(--dim); }
+  .st-step.done { background: rgba(16,185,129,0.16); border-color: var(--em); color: var(--em-hi); font-weight: 600; }
+
+  /* FAQ & Support */
+  .faq-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 26px; }
+  details.faq { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
+  details.faq summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text); }
+  details.faq p { margin: 8px 0 0; font-size: 0.84rem; color: var(--dim); }
+  .support-bar {
+    background: linear-gradient(135deg, rgba(13,19,32,0.95), rgba(16,185,129,0.08));
+    border: 1px solid var(--border-em); border-radius: 14px;
+    padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  footer { padding: 26px 0 38px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--dim); }
+  .foot-in { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .pulse-dot { animation: none !important; }
+    .spot-card:hover, .btn:hover { transform: none !important; }
+  }
+
+  /* Interactive PH GE Free Toolbox */
+  .tool-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .tool-tab {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--dim);
+    padding: 8px 14px; border-radius: 8px; font-family: var(--mono); font-size: 0.78rem;
+    font-weight: 600; cursor: pointer; transition: all 0.15s;
+  }
+  .tool-tab.active, .tool-tab:hover { background: rgba(16,185,129,0.14); border-color: var(--em); color: var(--em-hi); }
+  .tool-pane { display: none; }
+  .tool-pane.active { display: block; }
+  .tool-out {
+    margin-top: 14px; padding: 13px 16px; border-radius: 10px;
+    background: rgba(5, 7, 12, 0.8); border: 1px solid var(--border-em);
+    font-family: var(--mono); font-size: 0.84rem; color: var(--em-hi); line-height: 1.55;
+  }
+  .story-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: stretch; }
+  @media (max-width: 860px) { .story-grid { grid-template-columns: 1fr; } }
+  .spec-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 10px; }
+  .spec-table td { padding: 8px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .spec-table td:first-child { font-family: var(--mono); color: var(--em-hi); width: 38%; font-size: 0.78rem; }
+  .auth-seal {
+    margin-top: 20px; padding: 16px 20px; border-radius: 12px;
+    background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(245,158,11,0.06));
+    border: 1px solid var(--border-em);
+    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .seal-mark {
+    display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 0.78rem; color: var(--em-hi);
+  }
+  .seal-ring {
+    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid var(--em); background: rgba(16,185,129,0.15);
+    display: grid; place-items: center; font-weight: 800; color: var(--em-hi); font-size: 0.72rem;
+    box-shadow: 0 0 18px rgba(16,185,129,0.3);
+  }
+
+</style>
+</head>
+<body>
+  <div id="scrollBar" aria-hidden="true"></div>
+
+  <header class="nav">
+    <div class="wrap nav-in">
+      <a href="#top" class="brand">
+        <span class="brand-hex">ZGE</span>
+        <span>ZGE GEODETIC SUITE</span>
+      </a>
+      <nav class="nav-links" aria-label="Primary">
+        <a href="#capabilities">Capabilities</a>
+        <a href="#architecture">Performance</a>
+        <a href="#portal">Get License</a>
+        <a href="#support">Support</a>
+      </nav>
+      <div class="nav-right">
+        <span class="live-pill"><span class="pulse-dot"></span><span id="navApiText">v7.7 PRO READY</span></span>
+        <a href="#portal" class="btn btn-em btn-sm">Request Access</a>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <!-- 1. TACTICAL KINETIC HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <div class="kicker-pill" id="versionBadge">PREVIEW BUILD v7.7.0 PRO &bull; PHILIPPINE GEODETIC ENGINE</div>
+          <h1>Survey Plans in Minutes.<br/><span class="grad-text">Not Hours.</span></h1>
+          <p class="hero-lead">
+            A proprietary, 100% offline-first automation engine built natively for AutoCAD and Civil 3D &mdash; engineered for BSGE students, field teams, and licensed Philippine Geodetic Engineers.
+          </p>
+          <div class="hero-cta">
+            <a href="#portal" class="btn btn-em">Request Hardware License</a>
+            <a href="#capabilities" class="btn btn-ghost">Explore Capabilities</a>
+          </div>
+          <div class="compat-strip">
+            <strong>AutoCAD Requirement:</strong> Works on any existing Windows installation of full <strong>AutoCAD or Civil 3D (2013&ndash;2026+)</strong>. Runs <strong>100% offline</strong> &mdash; compatible with both licensed and offline/firewall-blocked workstations. <em>(Autodesk installer not included.)</em>
+          </div>
+          <div class="hero-kpis">
+            <div><div class="kpi-v">100+</div><div class="kpi-k">PROPRIETARY TOOLS</div></div>
+            <div><div class="kpi-v">~0.1s</div><div class="kpi-k">BINARY LOAD TIME</div></div>
+            <div><div class="kpi-v">100%</div><div class="kpi-k">OFFLINE LOCAL DATA</div></div>
+          </div>
+        </div>
+
+        <!-- Interactive 4-Mode Blueprint Viewport (Zero Command Names Leaked!) -->
+        <div class="viewport-shell" aria-label="Interactive Geodetic Engine Simulation">
+          <div class="vp-top">
+            <span id="vpReadout">MODE 01 // AUTOMATED TCT LOT PLOTTING</span>
+            <button type="button" id="replayBtn" class="vp-mode-btn" style="padding:3px 8px;">Replay</button>
+          </div>
+          <div class="vp-modes" id="vpModes">
+            <button type="button" class="vp-mode-btn active" data-mode="0">1. TCT Plot</button>
+            <button type="button" class="vp-mode-btn" data-mode="1">2. Subdivide</button>
+            <button type="button" class="vp-mode-btn" data-mode="2">3. Setback</button>
+            <button type="button" class="vp-mode-btn" data-mode="3">4. RTK / GIS</button>
+          </div>
+          <div class="vp-canvas-wrap">
+            <canvas id="surveyCanvas"></canvas>
+            <div class="vp-hud">
+              <span>N: <b id="hudN">1815420.145</b> m</span>
+              <span>E: <b id="hudE">458912.680</b> m</span>
+              <span id="hudTag" style="color:var(--em-hi);">PRS92 / PTM Zone 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. IP-PROTECTED OUTCOME BENTO (ZERO COMMAND NAMES EXPOSED) -->
+    <section id="capabilities" class="sec alt reveal">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Built for Real Philippine Surveying Output</h2>
+          <p>Every workflow is consolidated into guided dialogs and 5 dockable icon toolbars with hover guides &mdash; so you deliver accurate plans without memorizing scripts.</p>
+        </div>
+
+        <div class="bento" id="bentoGrid">
+          <div class="spot-card">
+            <span class="card-tag">CADASTRAL &amp; TCT</span>
+            <h3>Automated Lot Plotting &amp; Labeling</h3>
+            <p>Convert raw technical descriptions into closed PRS92 / Luzon 1911 / UTM boundaries with automatic bearing-distance labels, tie lines, coordinate callouts, and area tables.</p>
+          </div>
+          <div class="spot-card">
+            <span class="card-tag">SUBDIVISION ENGINE</span>
+            <h3>Exact-Area Splits &amp; Setbacks</h3>
+            <p>Execute parallel cuts, hinge splits, road right-of-way deductions, PD 1096 building footprint setbacks, and topology gap/overlap QA directly inside your DWG.</p>
+          </div>
+          <div class="spot-card">
+            <span class="card-tag gold">DENR-LMB READY</span>
+            <h3>Survey Return &amp; Title Block Automation</h3>
+            <p>Generate print-ready Lot Data Computations, Technical Descriptions, DENR transmittal &amp; GE certification sheets, and eSurvey XML exports using your saved PRC/PTR credentials.</p>
+          </div>
+          <div class="spot-card">
+            <span class="card-tag">FIELD &amp; GIS BRIDGE</span>
+            <h3>RTK, Total Station &amp; QGIS Integration</h3>
+            <p>Import PNEZD/PENZD survey CSVs, bring in QGIS GeoJSON/KML layers, run 2D Helmert best-fit checks with RMSE reporting, and export Google Earth KML or earthwork grids.</p>
+          </div>
+          <div class="spot-card">
+            <span class="card-tag gold">STUDENTS TO SENIORS</span>
+            <h3>Guided Workflows &amp; Board-Exam QA</h3>
+            <p>Includes 1-click merged pipelines for fast drafting, a 60-second in-CAD quick-start guide, and a built-in DENR AO 2007-29 traverse closure accuracy checker.</p>
+          </div>
+          <div class="spot-card">
+            <span class="card-tag">CUSTOMIZABLE UI</span>
+            <h3>Dockable Icon Toolbars &amp; Saved Prefs</h3>
+            <p>Drag and dock 5 compact toolbars anywhere on AutoCAD, toggle 16px or 32px icons with hover guides, and permanently save your preferred text height, decimals, and layer prefix.</p>
+          </div>
+        </div>
+
+        <!-- Interactive Time-Savings Estimator -->
+        <div class="roi-box">
+          <div>
+            <div style="font-family:var(--mono);font-size:0.74rem;color:var(--au-hi);margin-bottom:4px;">ESTIMATED WORKFLOW SPEEDUP</div>
+            <h3 style="font-family:var(--display);margin:0 0 6px;font-size:1.25rem;">How many lot plans do you process per month?</h3>
+            <div style="font-size:0.84rem;color:var(--dim);">Drag the slider (<b id="lotCountLbl" style="color:var(--text);">8 lots / month</b>) to estimate drafting time saved compared to manual CAD plotting &amp; tabulation.</div>
+            <input type="range" id="roiSlider" class="roi-slider" min="1" max="30" value="8" aria-label="Lots per month" />
+          </div>
+          <div class="roi-metrics">
+            <div class="roi-pill">
+              <div class="roi-num" id="roiHours">~9.3 hrs</div>
+              <div class="roi-sub">EST. HOURS SAVED / MO</div>
+            </div>
+            <div class="roi-pill">
+              <div class="roi-num" id="roiYear" style="color:var(--au-hi);">~112 hrs</div>
+              <div class="roi-sub">EST. HOURS SAVED / YR</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+
+    <!-- 2C. ORIGIN STORY (ANONYMOUS-FIRST INSPIRATION) & HONEST SYSTEM SPECS -->
+    <section id="story" class="sec alt reveal">
+      <div class="wrap">
+        <div class="story-grid">
+          <div class="panel-box">
+            <span class="card-tag gold">WHY ZGE EXISTS</span>
+            <h2 style="font-family:var(--display);margin:0 0 10px;font-size:1.55rem;">Built from Late-Night Plotting &amp; Real Field Deadlines</h2>
+            <p style="font-size:0.89rem;color:var(--dim);margin:0 0 12px;">
+              ZGE Suite didn't start as a corporate software pitch. It began on a single Windows laptop after countless late nights manually plotting technical descriptions, double-checking traverse closures, and reformatting DENR-LMB returns line by line.
+            </p>
+            <p style="font-size:0.89rem;color:var(--dim);margin:0;">
+              Built independently in the Philippines for fellow BSGE students and licensed Geodetic Engineers, every module follows one practical standard: if a routine drafting task takes 45 repetitive clicks in AutoCAD, it should take one clean guided workflow &mdash; running 100% offline with zero monthly subscription traps.
+            </p>
+          </div>
+
+          <div class="panel-box">
+            <span class="card-tag">SYSTEM REQUIREMENTS</span>
+            <h3 style="font-family:var(--display);margin:0 0 6px;font-size:1.15rem;">Lightweight Footprint &amp; Honest Specs</h3>
+            <p style="font-size:0.82rem;color:var(--dim);margin:0 0 8px;">If your PC runs AutoCAD smoothly, it can run ZGE Suite with zero noticeable lag.</p>
+            <table class="spec-table">
+              <tr><td>OS Platform</td><td>Windows 10 / 11 (64-bit) &bull; Win 7/8.1 supported</td></tr>
+              <tr><td>CAD Host</td><td>Full AutoCAD or Civil 3D (2013&ndash;2026+)</td></tr>
+              <tr><td>RAM / Storage</td><td>&lt; 15 MB additional RAM &bull; &lt; 5 MB disk space</td></tr>
+              <tr><td>Internet</td><td>Optional (100% offline activation &amp; execution)</td></tr>
+              <tr><td>Install Rights</td><td>Standard user (zero Admin rights needed)</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. ARCHITECTURE & TRUST STRIP -->
+    <section id="architecture" class="sec reveal">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Engineered for Speed, Privacy &amp; Longevity</h2>
+          <p>Static HTTPS edge delivery with zero exposed database, timing-safe admin verification, and a strict Zero-Password / Zero-PIN policy &mdash; your inquiry details and DWG files stay protected.</p>
+        </div>
+        <div class="proof-grid">
+          <div class="proof-item">
+            <div class="proof-num">2013 &rarr; 2026+</div>
+            <div class="proof-lbl">Universal native AutoCAD &amp; Civil 3D compatibility with no upper version cap.</div>
+          </div>
+          <div class="proof-item">
+            <div class="proof-num">RA 10173 Safe</div>
+            <div class="proof-lbl">100% of your DWG plans, TCTs, and client records stay strictly offline on your PC.</div>
+          </div>
+          <div class="proof-item">
+            <div class="proof-num">5-Factor HWID</div>
+            <div class="proof-lbl">Protected compiled binary with hardware-bound offline activation &amp; anti-tamper guard.</div>
+          </div>
+          <div class="proof-item">
+            <div class="proof-num">1-Click Install</div>
+            <div class="proof-lbl">No admin rights required. Future suite updates preserve your existing license key.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. UNIFIED 3-TAB CLIENT PORTAL -->
+    <section id="portal" class="sec alt reveal">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Request Access or Track Your Order</h2>
+          <p>Submit an inquiry to receive your <code>INQ-XXXXXX</code> tracking code, or check your live 5-stage delivery status.</p>
+        </div>
+
+        <div class="portal-grid">
+          <div class="panel-box">
+            <div class="tab-bar" role="tablist">
+              <button type="button" class="tab-btn active" data-tab="paneInq">1. Request License</button>
+              <button type="button" class="tab-btn" data-tab="paneTrack">2. Track Order (INQ)</button>
+              <button type="button" class="tab-btn" id="tabLicBtn" data-tab="paneLic" style="display:none;">3. Verify Key</button>
+            </div>
+
+            <!-- Tab 1: Inquiry Form -->
+            <div id="paneInq" class="tab-pane active">
+              <form id="inquiryForm" style="display:grid;gap:10px;">
+                <div class="f-grid">
+                  <input type="text" id="inqName" class="fld" placeholder="Full Name (e.g. Engr. Juan Dela Cruz) *" maxlength="100" required />
+                  <input type="text" id="inqContact" class="fld" placeholder="Discord Username or Email *" maxlength="100" required />
+                </div>
+                <div class="f-grid">
+                  <select id="inqCad" class="fld">
+                    <option value="AutoCAD / Civil 3D 2024-2026+">AutoCAD / Civil 3D 2024&ndash;2026+</option>
+                    <option value="AutoCAD / Civil 3D 2020-2023">AutoCAD / Civil 3D 2020&ndash;2023</option>
+                    <option value="AutoCAD / Civil 3D 2013-2019">AutoCAD / Civil 3D 2013&ndash;2019</option>
+                  </select>
+                  <select id="inqTier" class="fld">
+                    <option value="PRO_LIFETIME">Pro Perpetual License (Lifetime)</option>
+                    <option value="STUDENT_1YR">BSGE Student License (1-Year)</option>
+                  </select>
+                  <select id="inqPay" class="fld">
+                    <option value="GCash">GCash</option>
+                    <option value="Maya">Maya</option>
+                    <option value="Bank Transfer">Bank Transfer (BPI / BDO / GoTyme)</option>
+                  </select>
+                </div>
+                <input type="text" id="inqHwid" class="fld" placeholder="Optional Machine ID (ZGE-XXXX-XXXX-XXXX) — leave blank if none yet" maxlength="24" />
+                <div style="background:rgba(5,8,16,0.85);border:1px solid var(--border);border-radius:9px;padding:11px 13px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                    <div style="font-size:0.8rem;color:#cbd5e1;">
+                      <strong style="color:var(--em-hi);">Don't know your Machine ID yet?</strong> Download our 100% read-only Windows checker (no AutoCAD or internet needed):
+                    </div>
+                    <button type="button" id="dlHwidBatBtn" class="btn btn-ghost btn-sm" style="border-color:var(--border-em);color:var(--em-hi);">Download GET_ZGE_MACHINE_ID.bat</button>
+                  </div>
+                  <details style="margin-top:8px;">
+                    <summary style="cursor:pointer;font-family:var(--mono);font-size:0.74rem;color:var(--au-hi);">Inspect Full Source Code (100% Read-Only &bull; Zero Internet &bull; Zero Secrets &bull; SmartScreen: More info &rarr; Run anyway)</summary>
+                    <pre id="hwidBatPreview" style="margin:8px 0 0;max-height:210px;overflow:auto;background:#03050a;border:1px solid var(--border);border-radius:7px;padding:10px;font-family:var(--mono);font-size:0.72rem;color:#94a3b8;line-height:1.45;white-space:pre;"></pre>
+                  </details>
+                </div>
+                <input type="text" id="inqHp" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" />
+                <input type="text" id="inqNotes" class="fld" placeholder="Optional message (never paste private TCT/DWG data here)" maxlength="250" />
+                <label style="display:flex;align-items:flex-start;gap:8px;font-size:0.75rem;color:#94a3b8;margin:6px 0 8px;cursor:pointer;">
+                <input id="inqPrivacy" type="checkbox" required style="margin-top:3px;accent-color:#10b981;">
+                <span><strong>RA 10173 Privacy Consent:</strong> I consent to ZGE storing my name, contact handle, and optional hardware fingerprint solely for license fulfillment and support. No passwords, PINs, or CAD files are ever collected.</span>
+              </label>
+              <div id="turnstileMount" style="margin:8px 0;"></div>
+              <button type="submit" id="inqBtn" class="btn btn-em">Submit Inquiry &amp; Get Reference Code</button>
+              </form>
+              <div id="inqResultBox" class="res-box"></div>
+            </div>
+
+            <!-- Tab 2: Live 5-Stage Tracker -->
+            <div id="paneTrack" class="tab-pane">
+              <form id="trackForm" style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="trackInput" class="fld" style="flex:1;min-width:200px;font-family:var(--mono);text-transform:uppercase;" placeholder="INQ-XXXXXX" maxlength="16" required />
+                <button type="submit" id="trackBtn" class="btn btn-em">Track Status</button>
+              </form>
+              <div id="trackResult" class="res-box"></div>
+            </div>
+
+            <!-- Tab 3: License Key Status -->
+            <div id="paneLic" class="tab-pane">
+              <form id="licenseForm" style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="licenseInput" class="fld" style="flex:1;min-width:200px;font-family:var(--mono);text-transform:uppercase;" placeholder="Z6-XXXX-XXXX-XXXX-XXXX" maxlength="32" required />
+                <button type="submit" id="checkBtn" class="btn btn-em">Check License</button>
+              </form>
+              <div id="resultBox" class="res-box"></div>
+            </div>
+          </div>
+
+          <div class="panel-box">
+            <h3 style="margin:0 0 14px;font-family:var(--display);font-size:1.05rem;">3-Step Private Delivery</h3>
+            <div class="step-row">
+              <div class="step-n">01</div>
+              <div style="font-size:0.84rem;color:var(--dim);"><strong style="color:var(--text);">Submit Inquiry</strong><br/>Receive your <code>INQ-XXXXXX</code> ticket and send your Windows Machine ID.</div>
+            </div>
+            <div class="step-row">
+              <div class="step-n">02</div>
+              <div style="font-size:0.84rem;color:var(--dim);"><strong style="color:var(--text);">Direct Verification</strong><br/>Pay via PH channels; developer confirms directly before issuing your package.</div>
+            </div>
+            <div class="step-row" style="margin-bottom:0;">
+              <div class="step-n">03</div>
+              <div style="font-size:0.84rem;color:var(--dim);"><strong style="color:var(--text);">1-Click Install</strong><br/>Run the included installer, activate once offline, and start drafting immediately.</div>
+            </div>
+            <div class="pay-tags">
+              <span class="pay-tag">GCash</span>
+              <span class="pay-tag">Maya</span>
+              <span class="pay-tag">Bank Transfer</span>
+              <span class="pay-tag">Zero Auto-Charge</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. FAQ & ECOSYSTEM SUPPORT -->
+    <section id="support" class="sec reveal">
+      <div class="wrap">
+        <div class="sec-head">
+          <h2>Frequently Asked Questions</h2>
+          <p>Direct, transparent answers before you request a license.</p>
+        </div>
+
+        <div class="faq-grid">
+          <details class="faq">
+            <summary>Does it work completely offline?</summary>
+            <p>Yes. Activation and all surveying tools run 100% locally inside your Windows AutoCAD or Civil 3D &mdash; no internet or cloud login required.</p>
+          </details>
+          <details class="faq">
+            <summary>Will future suite updates break my license key?</summary>
+            <p>No. Your hardware-bound key remains valid across future suite updates on the same PC, and includes a 1-time version rollback option.</p>
+          </details>
+          <details class="faq">
+            <summary>Are my DWG drawings or TCT files ever uploaded?</summary>
+            <p>Never. All computations and exports happen locally on your own workstation in full compliance with RA 10173.</p>
+          </details>
+          <details class="faq">
+            <summary>What if I reformat my PC or change laptops?</summary>
+            <p>Message the developer on Discord or Facebook with your original key and new Machine ID for a verified license transfer.</p>
+          </details>
+        </div>
+
+        <div class="support-bar">
+          <div>
+            <strong style="font-family:var(--display);font-size:1.06rem;">Direct Developer Support &amp; Remote Setup</strong>
+            <div style="font-size:0.84rem;color:var(--dim);">Maintained by Wendell Heramia (<code>@zwell04</code>) &bull; Official Ecosystem Partner: <a href="https://droidrts.pages.dev" target="_blank" rel="noopener noreferrer" style="color:var(--em-hi);text-decoration:underline;">DroidRTS</a></div>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <a href="https://discord.gg/pfGNGcZVjW" target="_blank" rel="noopener noreferrer" class="btn btn-em btn-sm">Join Discord Hub</a>
+            <a href="https://www.facebook.com/zwellge" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Facebook / Messenger</a>
+          </div>
+        </div>
+
+        <div class="auth-seal" id="officialSeal">
+          <div class="seal-mark">
+            <div class="seal-ring">ZGE</div>
+            <div>
+              <strong style="color:var(--text);display:block;">OFFICIAL ZGE AUTHENTICITY SEAL // ZGE-PH-2026</strong>
+              <span id="originCheckText" style="color:var(--dim);font-size:0.75rem;">Verifying official portal origin...</span>
+            </div>
+          </div>
+          <div style="font-size:0.78rem;color:#cbd5e1;max-width:460px;">
+            <strong style="color:var(--au-hi);">Strict Zero-Password &amp; Zero-PIN Policy:</strong> Official licenses are issued ONLY via <code>zge-geodetic-suite-web.pages.dev</code>, Discord <code>@zwell04</code>, or <code>facebook.com/zwellge</code>. We will <strong>NEVER ask for any password, PIN, OTP, card number, or Autodesk login</strong> &mdash; ever.
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap foot-in">
+      <span>&copy; <span id="year"></span> Wendell Heramia &bull; ZGE Complete Geodetic &amp; GIS Suite v7.7 Pro</span>
+      <span style="font-family:var(--mono);font-size:0.74rem;" id="workerPingText">API: zge-license-api.zwell.workers.dev</span>
+    </div>
+  
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.74rem;color:#94a3b8;line-height:1.55;">
+        <p style="margin:0 0 6px;"><strong>Trademark &amp; Non-Affiliation Notice:</strong> AutoCAD&reg; and Civil 3D&reg; are registered trademarks of Autodesk, Inc. ZGE Complete Geodetic &amp; GIS Suite is an independent third-party plugin developed in the Philippines and is <strong>not affiliated with, endorsed by, or sponsored by Autodesk, Inc. or DENR-LMB</strong>. Autodesk software installers are not provided.</p>
+        <p style="margin:0 0 6px;"><strong>Digital License, Refund &amp; PC-Transfer Policy:</strong> Because each hardware-bound activation key (<code>Z6-...</code>) and watermarked package is generated uniquely for your Machine ID, completed digital deliveries are <strong>non-refundable</strong> once activated. Verified PC reformats or hardware upgrades qualify for assisted license transfer via official support.</p>
+        <p style="margin:0;"><strong>Professional Responsibility (RA 8560):</strong> ZGE Suite assists geodetic drafting and computation; the signing Licensed Geodetic Engineer remains solely responsible for verifying all plans, bearings, areas, and technical descriptions prior to official submission.</p>
+      </div>
+
+  </footer>
+
+  <script>
+    const CONFIG = {
+      WORKER_URL: "https://zge-license-api.zwell.workers.dev",
+      PUBLIC_TESTING_MODE: true,
+      TURNSTILE_SITE_KEY: "" // Paste free Cloudflare Turnstile Site Key when ready
     };
+    document.getElementById("year").textContent = new Date().getFullYear();
+    if (!CONFIG.PUBLIC_TESTING_MODE) document.getElementById("tabLicBtn").style.display = "inline-flex";
 
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
+    // Scroll Progress + Reveal
+    const scrollBar = document.getElementById("scrollBar");
+    window.addEventListener("scroll", () => {
+      const h = document.documentElement;
+      const max = h.scrollHeight - h.clientHeight;
+      scrollBar.style.width = max > 0 ? ((window.scrollY / max) * 100).toFixed(1) + "%" : "0%";
+    }, { passive: true });
+
+    const reveals = document.querySelectorAll(".reveal");
+    if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
+      }, { threshold: 0.08 });
+      reveals.forEach(el => io.observe(el));
+    } else {
+      reveals.forEach(el => el.classList.add("in"));
     }
 
-    if (!env.DB) {
-      return jsonResponse({ ok: false, error: "Server misconfigured: DB binding missing." }, 500, corsHeaders);
+    // Mouse-tracking spotlight glow on Bento cards
+    document.querySelectorAll(".spot-card").forEach(card => {
+      card.addEventListener("mousemove", (e) => {
+        const r = card.getBoundingClientRect();
+        card.style.setProperty("--mx", (e.clientX - r.left) + "px");
+        card.style.setProperty("--my", (e.clientY - r.top) + "px");
+      });
+    });
+
+    // Interactive Time-Saved Estimator (~70 min saved per full lot plan + LDC + DENR return)
+    const roiSlider = document.getElementById("roiSlider");
+    function updateRoi() {
+      const lots = Number(roiSlider.value || 8);
+      const hrsMo = (lots * 70) / 60;
+      document.getElementById("lotCountLbl").textContent = `${lots} lot${lots > 1 ? "s" : ""} / month`;
+      document.getElementById("roiHours").textContent = `~${hrsMo.toFixed(1)} hrs`;
+      document.getElementById("roiYear").textContent = `~${Math.round(hrsMo * 12)} hrs`;
+    }
+    roiSlider.addEventListener("input", updateRoi);
+    updateRoi();
+
+    // Live Cloudflare Worker Status Sync
+    async function syncWorkerStatus() {
+      const pingEl = document.getElementById("workerPingText");
+      const badgeEl = document.getElementById("versionBadge");
+      const navApi = document.getElementById("navApiText");
+      try {
+        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/status");
+        const data = await res.json();
+        if (data && data.ok) {
+          badgeEl.textContent = (CONFIG.PUBLIC_TESTING_MODE ? "PREVIEW BUILD " : "RELEASE ") + "v" + data.latest_version + " PRO • PHILIPPINE GEODETIC ENGINE";
+          navApi.textContent = "v" + data.latest_version + " ONLINE";
+          pingEl.textContent = "CLOUD API: ONLINE (v" + data.latest_version + ")";
+          pingEl.style.color = "#10b981";
+        }
+      } catch (_) {
+        pingEl.textContent = "CLOUD API: STANDBY";
+      }
+    }
+    syncWorkerStatus();
+
+    // Portal Tab Switcher
+    document.querySelectorAll(".tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
+        btn.classList.add("active");
+        document.getElementById(btn.dataset.tab).classList.add("active");
+      });
+    });
+
+    // Inquiry Form -> Cloudflare /api/v1/public/inquiry
+
+    // Plug-and-play Cloudflare Turnstile loader (activates automatically when CONFIG.TURNSTILE_SITE_KEY is set)
+    if (CONFIG.TURNSTILE_SITE_KEY && document.getElementById("turnstileMount")) {
+      const wDiv = document.createElement("div");
+      wDiv.className = "cf-turnstile";
+      wDiv.setAttribute("data-sitekey", CONFIG.TURNSTILE_SITE_KEY);
+      wDiv.setAttribute("data-theme", "dark");
+      document.getElementById("turnstileMount").appendChild(wDiv);
+      const tsSc = document.createElement("script");
+      tsSc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
+      tsSc.async = true;
+      tsSc.defer = true;
+      document.head.appendChild(tsSc);
+    }
+    const inqForm = document.getElementById("inquiryForm");
+    const inqRes = document.getElementById("inqResultBox");
+    inqForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const btn = document.getElementById("inqBtn");
+      btn.disabled = true; btn.textContent = "Submitting...";
+      inqRes.style.display = "block"; inqRes.textContent = "Registering inquiry...";
+      try {
+        const tsInput = document.querySelector('input[name="cf-turnstile-response"]');
+        const payload = {
+          client_name: document.getElementById("inqName").value.trim(),
+          contact_info: document.getElementById("inqContact").value.trim(),
+          cad_version: document.getElementById("inqCad").value,
+          plan_tier: document.getElementById("inqTier").value,
+          payment_method: document.getElementById("inqPay").value,
+          hwid_submitted: document.getElementById("inqHwid").value.trim().toUpperCase(),
+          notes: document.getElementById("inqNotes").value.trim(),
+          website_hp: document.getElementById("inqHp").value,
+          cf_turnstile_token: tsInput ? tsInput.value : ""
+        };
+        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/inquiry", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (res.ok && data.ok) {
+          inqRes.innerHTML = `<strong style="color:#34d399;">Inquiry Received!</strong> Reference Code: <code style="font-size:1rem;">${data.ref_code}</code><br/><span style="color:#94a3b8;">Track live progress anytime in Tab 2, or message @zwell04 on Discord / Facebook.</span>`;
+          inqForm.reset();
+        } else {
+          inqRes.innerHTML = `<strong style="color:#f43f5e;">${data.error || "Unable to submit inquiry."}</strong>`;
+        }
+      } catch (_) {
+        inqRes.innerHTML = `<strong style="color:#f43f5e;">Network error. Please retry or contact @zwell04 on Discord.</strong>`;
+      } finally {
+        btn.disabled = false; btn.textContent = "Submit Inquiry & Get Reference Code";
+      }
+    });
+
+    // 5-Stage Progress Tracker
+    const trackRes = document.getElementById("trackResult");
+    const STAGE_MAP = { RECEIVED: 1, PAYMENT_REVIEW: 2, KEY_ISSUED: 3, READY_FOR_DELIVERY: 4, COMPLETED: 5, ARCHIVED_LICENSE_ACTIVE: 5 };
+    document.getElementById("trackForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const ref = document.getElementById("trackInput").value.trim().toUpperCase();
+      trackRes.style.display = "block"; trackRes.textContent = "Checking live status...";
+      try {
+        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/track-inquiry?ref=" + encodeURIComponent(ref));
+        const d = await res.json();
+        if (!res.ok || !d.ok) { trackRes.innerHTML = `<strong style="color:#f43f5e;">${d.error || "Reference code not found."}</strong>`; return; }
+        const stg = STAGE_MAP[d.status] || 1;
+        const bars = ["1. Received", "2. Payment", "3. Key Ready", "4. Delivery", "5. Active"].map((l, i) => `<div class="st-step ${i + 1 <= stg ? "done" : ""}">${l}</div>`).join("");
+        trackRes.innerHTML = `<strong>${d.ref_code}</strong> &mdash; <span style="color:#34d399;">${d.status}</span><div class="stages">${bars}</div><div style="color:#94a3b8;font-size:0.82rem;">${d.status_note || "Your request is being processed."}</div>`;
+      } catch (_) {
+        trackRes.innerHTML = `<strong style="color:#f43f5e;">Unable to reach tracking server.</strong>`;
+      }
+    });
+
+    // License Verifier
+    document.getElementById("licenseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const box = document.getElementById("resultBox");
+      const key = document.getElementById("licenseInput").value.trim().toUpperCase();
+      box.style.display = "block"; box.textContent = "Verifying...";
+      try {
+        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/check-license", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ license_key: key })
+        });
+        const d = await res.json();
+        box.innerHTML = res.ok && d.ok
+          ? `<strong style="color:#34d399;">${d.status}</strong> &mdash; ${d.client_name || "Licensed User"} (Watermark: <code>${d.watermark || "N/A"}</code>)`
+          : `<strong style="color:#f43f5e;">${d.error || "License not found."}</strong>`;
+      } catch (_) {
+        box.innerHTML = `<strong style="color:#f43f5e;">Verification server unreachable.</strong>`;
+      }
+    });
+
+    // Interactive 4-Mode Tactical Blueprint Canvas (Zero Command Names Leaked!)
+    const canvas = document.getElementById("surveyCanvas");
+    const ctx = canvas.getContext("2d");
+    const MODES = [
+      { title: "MODE 01 // AUTOMATED TCT LOT PLOTTING", tag: "Area: 500.00 sq.m. | Closed" },
+      { title: "MODE 02 // EXACT-AREA SUBDIVISION SPLIT", tag: "Lot 1A: 250.00 | Lot 1B: 250.00" },
+      { title: "MODE 03 // PD 1096 BUILDING SETBACK", tag: "Buildable Footprint: 68.4%" },
+      { title: "MODE 04 // RTK SURVEY & GIS OVERLAY", tag: "RMSE: 0.012 m | PRS92 Zone 3" }
+    ];
+    const lotPts = [
+      { x: 0.14, y: 0.78, lbl: "BLLM-1", n: 1815390.120, e: 458870.440 },
+      { x: 0.30, y: 0.66, lbl: "1", n: 1815420.145, e: 458912.680 },
+      { x: 0.72, y: 0.72, lbl: "2", n: 1815405.810, e: 458960.120 },
+      { x: 0.82, y: 0.24, lbl: "3", n: 1815462.340, e: 458978.510 },
+      { x: 0.38, y: 0.18, lbl: "4", n: 1815474.900, e: 458925.190 },
+      { x: 0.30, y: 0.66, lbl: "1", n: 1815420.145, e: 458912.680 }
+    ];
+    let curMode = 0, animT = 0, animId = null;
+
+    function drawFrame() {
+      const dpr = window.devicePixelRatio || 1;
+      const w = canvas.clientWidth, h = canvas.clientHeight;
+      if (canvas.width !== w * dpr || canvas.height !== h * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+
+      // Precision blueprint grid
+      ctx.strokeStyle = "rgba(16,185,129,0.08)"; ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
+      for (let y = 0; y < h; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
+
+      const segs = lotPts.length - 1;
+      const cur = Math.min(animT, segs);
+
+      // Filled lot polygon once closed
+      if (cur >= segs) {
+        ctx.fillStyle = "rgba(16,185,129,0.11)";
+        ctx.beginPath();
+        for (let i = 1; i < lotPts.length; i++) {
+          const px = lotPts[i].x * w, py = lotPts[i].y * h;
+          if (i === 1) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        }
+        ctx.closePath(); ctx.fill();
+
+        // Mode-specific tactical overlays
+        if (curMode === 1) {
+          // Exact subdivision split line
+          ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+          ctx.beginPath(); ctx.moveTo(0.51 * w, 0.69 * h); ctx.lineTo(0.60 * w, 0.21 * h); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.font = "700 11px 'JetBrains Mono', monospace"; ctx.fillStyle = "#fbbf24";
+          ctx.fillText("LOT 1-A", 0.38 * w, 0.48 * h);
+          ctx.fillText("LOT 1-B", 0.62 * w, 0.48 * h);
+        } else if (curMode === 2) {
+          // Inner PD 1096 building footprint setback
+          ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 1.8; ctx.setLineDash([4, 4]);
+          ctx.fillStyle = "rgba(56,189,248,0.14)";
+          ctx.beginPath();
+          ctx.moveTo(0.37 * w, 0.59 * h); ctx.lineTo(0.66 * w, 0.64 * h);
+          ctx.lineTo(0.74 * w, 0.30 * h); ctx.lineTo(0.43 * w, 0.26 * h);
+          ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
+          ctx.font = "700 11px 'JetBrains Mono', monospace"; ctx.fillStyle = "#38bdf8";
+          ctx.fillText("BUILDABLE FOOTPRINT", 0.44 * w, 0.46 * h);
+        } else if (curMode === 3) {
+          // RTK GPS shot nodes + RMSE vectors
+          const shots = [[0.30,0.66],[0.72,0.72],[0.82,0.24],[0.38,0.18],[0.55,0.45],[0.46,0.34],[0.64,0.52]];
+          shots.forEach(([sx, sy], k) => {
+            ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.4;
+            ctx.beginPath(); ctx.arc(sx * w, sy * h, 8, 0, Math.PI * 2); ctx.stroke();
+            ctx.fillStyle = "#fbbf24"; ctx.font = "600 10px 'JetBrains Mono', monospace";
+            ctx.fillText("RTK-" + (k + 1), sx * w + 10, sy * h + 3);
+          });
+        }
+      }
+
+      // Draw tie line + lot courses progressively
+      for (let i = 0; i < Math.floor(cur) + 1 && i < segs; i++) {
+        const frac = Math.min(1, cur - i);
+        const a = lotPts[i], b = lotPts[i + 1];
+        const x1 = a.x * w, y1 = a.y * h;
+        const x2 = (a.x + (b.x - a.x) * frac) * w, y2 = (a.y + (b.y - a.y) * frac) * h;
+        ctx.strokeStyle = i === 0 ? "#f59e0b" : "#10b981";
+        ctx.setLineDash(i === 0 ? [5, 5] : []);
+        ctx.lineWidth = 2.4;
+        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+        ctx.setLineDash([]);
+        if (frac < 1 || i === segs - 1) {
+          document.getElementById("hudN").textContent = (a.n + (b.n - a.n) * frac).toFixed(3);
+          document.getElementById("hudE").textContent = (a.e + (b.e - a.e) * frac).toFixed(3);
+        }
+      }
+
+      // Vertices
+      lotPts.slice(0, -1).forEach((p, idx) => {
+        if (cur >= idx) {
+          const px = p.x * w, py = p.y * h;
+          ctx.fillStyle = idx === 0 ? "#f59e0b" : "#34d399";
+          ctx.beginPath(); ctx.arc(px, py, 4.2, 0, Math.PI * 2); ctx.fill();
+          ctx.font = "700 11px 'JetBrains Mono', monospace"; ctx.fillStyle = "#e2e8f0";
+          ctx.fillText(p.lbl, px + 8, py - 6);
+        }
+      });
+
+      if (animT < segs) { animT += 0.04; animId = requestAnimationFrame(drawFrame); }
     }
 
-    const ip = request.headers.get("CF-Connecting-IP") || "unknown";
-
-    try {
-      // =====================================================================
-      // 1. PUBLIC STATUS & AUTOCAD ZGEUPDATE (/version.json)
-      // =====================================================================
-      if ((path === "/api/v1/public/status" || path === "/version.json") && request.method === "GET") {
-        const cfg = await env.DB.prepare("SELECT * FROM app_config WHERE id = 1").first();
-        if (!cfg) return jsonResponse({ ok: false, error: "App config missing." }, 500, corsHeaders);
-
-        if (path === "/version.json") {
-          // Exact schema expected by ZGEUPDATE in ZGE_License.lsp
-          return jsonResponse({
-            latest: cfg.latest_version,
-            min_supported: cfg.min_supported_version,
-            download_url: cfg.download_url,
-            changelog: cfg.release_notes,
-            updated_at: (cfg.updated_at || "").slice(0, 10),
-          }, 200, corsHeaders);
-        }
-
-        return jsonResponse({
-          ok: true,
-          latest_version: cfg.latest_version,
-          min_supported_version: cfg.min_supported_version,
-          download_url: cfg.download_url,
-          release_notes: cfg.release_notes,
-          maintenance_mode: Boolean(cfg.maintenance_mode),
-        }, 200, corsHeaders);
-      }
-
-      // =====================================================================
-      // 2. PUBLIC WEBSITE LICENSE CHECKER (Rate-limited: 20 req / 10 min / IP)
-      // =====================================================================
-      if (path === "/api/v1/public/check-license" && request.method === "POST") {
-        if (!(await allowRate(env.DB, `chk:${ip}`, 20, 600))) {
-          return jsonResponse({ ok: false, error: "Too many requests. Please wait a few minutes." }, 429, corsHeaders);
-        }
-        const body = await safeBody(request);
-        const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
-        if (!KEY_RE.test(key)) {
-          return jsonResponse({ ok: false, error: "Invalid license key format." }, 400, corsHeaders);
-        }
-
-        const lic = await env.DB.prepare(
-          "SELECT client_name, tier, status, expires_at FROM licenses WHERE license_key = ?"
-        ).bind(key).first();
-
-        if (!lic) {
-          return jsonResponse({ ok: false, error: "License not registered in cloud portal." }, 404, corsHeaders);
-        }
-
-        return jsonResponse({
-          ok: true,
-          status: lic.status,
-          tier: lic.tier,
-          client_name: maskName(lic.client_name),
-          expires_at: lic.expires_at,
-        }, 200, corsHeaders);
-      }
-
-      // =====================================================================
-      // 2B. HYBRID WEBSITE INQUIRY / ORDER FORM (Rate-limited: 5 req / 15 min / IP)
-      // =====================================================================
-      if (path === "/api/v1/public/inquiry" && request.method === "POST") {
-        if (!(await allowRate(env.DB, `inq:${ip}`, 5, 900))) {
-          return jsonResponse({ ok: false, error: "Too many submissions. Please wait 15 minutes or message Discord." }, 429, corsHeaders);
-        }
-        const body = await safeBody(request);
-        if (String(body.website_hp || "").trim()) {
-          return jsonResponse({ ok: true, ref_code: "INQ-000000", message: "Received." }, 200, corsHeaders);
-        }
-        const name = String(body.client_name || "").trim().slice(0, 100);
-        const contact = String(body.contact_info || "").trim().slice(0, 100);
-        const cad = String(body.cad_version || "").trim().slice(0, 40);
-        const hwid = String(body.hwid_submitted || "").trim().toUpperCase().slice(0, 32);
-        const tier = VALID_TIERS.has(String(body.plan_tier || "").toUpperCase()) ? String(body.plan_tier).toUpperCase() : "PRO";
-        const pay = String(body.payment_method || "GCASH").trim().toUpperCase().slice(0, 24);
-        const notes = String(body.notes || "").trim().slice(0, 300);
-
-        if (name.length < 3 || contact.length < 3) {
-          return jsonResponse({ ok: false, error: "Please enter your full name and Discord/Email contact." }, 400, corsHeaders);
-        }
-        if (hwid && !HWID_RE.test(hwid)) {
-          return jsonResponse({ ok: false, error: "Invalid Machine ID format. Must be ZGE-XXXX-XXXX-XXXX or leave blank for pre-order." }, 400, corsHeaders);
-        }
-
-        const rnd = Array.from(crypto.getRandomValues(new Uint8Array(3))).map(b => b.toString(16).padStart(2, "0")).join("").toUpperCase();
-        const refCode = `INQ-${rnd}`;
-
-        await env.DB.prepare(
-          `INSERT INTO inquiries (ref_code, client_name, contact_info, cad_version, hwid_submitted, plan_tier, payment_method, notes)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-        ).bind(refCode, name, contact, cad, hwid, tier, pay, notes).run();
-
-        await sendDiscordInquiry(env, `New Website Inquiry ${refCode}`, `Name: ${name}\nContact: ${contact}\nPlan: ${tier} (${pay})\nCAD: ${cad || "N/A"}\nHWID: ${hwid || "TBD"}`, 0x38bdf8);
-        await syncToGoogleSheet(env, "Website Inquiries", [new Date().toISOString(), refCode, name, contact, cad || "N/A", tier, pay, hwid || "TBD", notes, "PENDING"]);
-        return jsonResponse({ ok: true, ref_code: refCode, message: "Inquiry saved. Share this Reference Code in our Discord #zge-support-ticket." }, 200, corsHeaders);
-      }
-
-      // =====================================================================
-      // 2C. REAL-TIME PUBLIC TICKET / INQUIRY TRACKER (Rate-limited: 30 req / 10 min / IP)
-      // =====================================================================
-      if (path === "/api/v1/public/track-inquiry" && request.method === "GET") {
-        if (!(await allowRate(env.DB, `trk:${ip}`, 30, 600))) {
-          return jsonResponse({ ok: false, error: "Too many lookups. Please wait a few minutes." }, 429, corsHeaders);
-        }
-        const ref = String(url.searchParams.get("ref") || "").trim().toUpperCase().slice(0, 16);
-        if (!/^INQ-[A-F0-9]{6}$/.test(ref)) {
-          return jsonResponse({ ok: false, error: "Invalid Reference Code format (expected INQ-XXXXXX)." }, 400, corsHeaders);
-        }
-        const row = await env.DB.prepare(
-          "SELECT ref_code, client_name, plan_tier, status, progress_stage, status_note, created_at, updated_at FROM inquiries WHERE ref_code = ?"
-        ).bind(ref).first();
-        if (!row) {
-          return jsonResponse({ ok: false, error: "Reference Code not found." }, 404, corsHeaders);
-        }
-        // Temporary INQ Lifecycle: (1) Auto-close & hand off to Z6 License Key once Completed; (2) Auto-expire unpaid tickets after 7 days
-        const createdMs = Date.parse((row.created_at || "").replace(" ", "T") + "Z");
-        const ageDays = Number.isFinite(createdMs) ? (Date.now() - createdMs) / 86400000 : 0;
-        if (row.status === "COMPLETED" || Number(row.progress_stage || 1) >= 5) {
-          return jsonResponse({
-            ok: true,
-            ref_code: row.ref_code,
-            client_name: maskName(row.client_name),
-            plan_tier: row.plan_tier,
-            status: "ARCHIVED_LICENSE_ACTIVE",
-            progress_stage: 5,
-            status_note: "This temporary inquiry ticket is now closed. Please use your permanent Z6-... License Key in the License Portal going forward.",
-            updated_at: row.updated_at || row.created_at
-          }, 200, corsHeaders);
-        }
-        if (ageDays > 7 && row.status !== "BLOCKED") {
-          return jsonResponse({
-            ok: false,
-            error: "This temporary INQ ticket expired after 7 days. Submit a new inquiry or use your permanent Z6-... License Key if already activated."
-          }, 410, corsHeaders);
-        }
-        return jsonResponse({
-          ok: true,
-          ref_code: row.ref_code,
-          client_name: maskName(row.client_name),
-          plan_tier: row.plan_tier,
-          status: row.status,
-          progress_stage: Number(row.progress_stage || 1),
-          status_note: row.status_note || "Queued for review.",
-          updated_at: row.updated_at || row.created_at
-        }, 200, corsHeaders);
-      }
-
-      // =====================================================================
-      // 2D. 1-TIME SELF-SERVICE VERSION DOWNGRADE CHECK (Requires Ticket After 1st Use)
-      // =====================================================================
-      if (path === "/api/v1/public/request-downgrade" && request.method === "POST") {
-        if (!(await allowRate(env.DB, `dg:${ip}`, 10, 600))) {
-          return jsonResponse({ ok: false, error: "Too many requests." }, 429, corsHeaders);
-        }
-        const body = await safeBody(request);
-        const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
-        const targetVer = String(body.target_version || "Previous Stable").trim().slice(0, 24);
-        if (!KEY_RE.test(key)) {
-          return jsonResponse({ ok: false, error: "Valid Z6 license key required." }, 400, corsHeaders);
-        }
-        const lic = await env.DB.prepare(
-          "SELECT id, watermark, client_name, status, downgrades_used, max_downgrades FROM licenses WHERE license_key = ?"
-        ).bind(key).first();
-        if (!lic || lic.status !== "ACTIVE") {
-          return jsonResponse({ ok: false, error: "Active license not found." }, 404, corsHeaders);
-        }
-        const used = Number(lic.downgrades_used || 0);
-        const maxD = Number(lic.max_downgrades ?? 1);
-        if (used >= maxD) {
-          return jsonResponse({
-            ok: false,
-            requires_ticket: true,
-            error: "1-time self-service downgrade limit reached. Please open a Private Ticket in Discord for further version rollbacks."
-          }, 403, corsHeaders);
-        }
-        await env.DB.prepare(
-          "UPDATE licenses SET downgrades_used = downgrades_used + 1, updated_at = datetime('now') WHERE id = ?"
-        ).bind(lic.id).run();
-        await sendDiscordInquiry(env, "1-Time Downgrade Approved", `Watermark: ${lic.watermark}\nClient: ${lic.client_name}\nRequested Build: ${targetVer}\nRemaining Self-Service Downgrades: 0`, 0xf59e0b);
-        return jsonResponse({
-          ok: true,
-          approved: true,
-          remaining_downgrades: Math.max(0, maxD - used - 1),
-          message: "1-time downgrade approved! Message Wendell in your Discord ticket with this confirmation to receive the archived stable .VLX."
-        }, 200, corsHeaders);
-      }
-
-      // =====================================================================
-      // 3. AUTOCAD v7.0 IRONCLAD ANTI-PIRACY HEARTBEAT (/api/heartbeat)
-      // =====================================================================
-      if (path === "/api/heartbeat" && request.method === "POST") {
-        if (!(await allowRate(env.DB, `hb:${ip}`, 60, 600))) {
-          return jsonResponse({ ok: false, error: "Rate limit exceeded." }, 429, corsHeaders);
-        }
-        const body = await safeBody(request);
-        const key = String(body.key || "").trim().toUpperCase().slice(0, 32);
-        const hwid = String(body.hwid || "").trim().toUpperCase().slice(0, 32);
-        const wm = String(body.watermark || "").trim().toUpperCase().slice(0, 24);
-
-        if (!KEY_RE.test(key) || !HWID_RE.test(hwid)) {
-          return jsonResponse({ ok: false, error: "Invalid heartbeat payload." }, 400, corsHeaders);
-        }
-
-        // 1. Check permanent HWID blocklist first
-        const blk = await env.DB.prepare("SELECT reason FROM blocked_hwids WHERE hwid = ?").bind(hwid).first();
-        if (blk) {
-          await sendDiscordAlert(env, "BLOCKLISTED PC ATTEMPT", `Blocked HWID ${hwid} tried key ${key} (${wm || "NO_WM"}).\nReason: ${blk.reason}\nIP: ${ip}`, 0xf43f5e);
-          await syncToGoogleSheet(env, "Security Alerts", [new Date().toISOString(), "BLOCKED_PC", wm || "NO_WM", key, hwid, blk.reason, ip]);
-          return jsonResponse({ status: "BLOCKED" }, 200, corsHeaders);
-        }
-
-        // 2. Check revocation status in licenses table
-        const lic = await env.DB.prepare("SELECT status FROM licenses WHERE license_key = ?").bind(key).first();
-        if (lic && lic.status !== "ACTIVE") {
-          return jsonResponse({ status: "REVOKED" }, 200, corsHeaders);
-        }
-
-        // Deduplicated upsert into heartbeats (prevents D1 bloat)
-        await env.DB.prepare(
-          `INSERT INTO heartbeats (license_key, hwid, watermark, seen_at)
-           VALUES (?, ?, ?, datetime('now'))
-           ON CONFLICT(license_key, hwid) DO UPDATE SET seen_at = datetime('now'), watermark = excluded.watermark`
-        ).bind(key, hwid, wm).run();
-
-        const cntRow = await env.DB.prepare(
-          "SELECT COUNT(*) AS c FROM heartbeats WHERE license_key = ?"
-        ).bind(key).first();
-        const hwidCount = Number(cntRow?.c || 1);
-
-        if (hwidCount > 1) {
-          await env.DB.prepare(
-            `INSERT INTO piracy_alerts (license_key, watermark, hwid_count, last_hwid, detected_at)
-             VALUES (?, ?, ?, ?, datetime('now'))
-             ON CONFLICT(license_key) DO UPDATE SET
-               hwid_count = excluded.hwid_count,
-               last_hwid = excluded.last_hwid,
-               detected_at = datetime('now')`
-          ).bind(key, wm, hwidCount, hwid).run();
-          await sendDiscordAlert(env, "MULTI-PC PIRACY ALERT", `Watermark: ${wm || "UNKNOWN"}\nKey: ${key}\nDistinct PCs: ${hwidCount}\nLatest HWID: ${hwid}\nIP: ${ip}`, 0xf59e0b);
-          await syncToGoogleSheet(env, "Security Alerts", [new Date().toISOString(), "MULTI_PC_PIRACY", wm || "UNKNOWN", key, hwid, String(hwidCount), ip]);
-        }
-
-        // Auto-complete matching inquiry to Stage 5/5 when buyer activates in AutoCAD (0 clicks for owner!)
-        await env.DB.prepare(
-          "UPDATE inquiries SET status = 'COMPLETED', progress_stage = 5, status_note = 'License activated inside AutoCAD & verified!', updated_at = datetime('now') WHERE hwid_submitted = ? AND progress_stage < 5 AND status != 'BLOCKED'"
-        ).bind(hwid).run();
-
-        return jsonResponse({ status: "OK", devices: hwidCount }, 200, corsHeaders);
-      }
-
-      // =====================================================================
-      // 4. OWNER ADMIN ENDPOINTS (Strict Constant-Time Bearer ADMIN_SECRET)
-      // =====================================================================
-      if (path.startsWith("/api/v1/admin/") || path.startsWith("/api/admin/")) {
-        if (!env.ADMIN_SECRET || env.ADMIN_SECRET.length < 16) {
-          return jsonResponse({ ok: false, error: "Server misconfigured: ADMIN_SECRET not set." }, 500, corsHeaders);
-        }
-        const authHeader = request.headers.get("Authorization") || "";
-        const expected = `Bearer ${env.ADMIN_SECRET}`;
-        if (!(await timingSafeEqualStr(authHeader, expected))) {
-          return jsonResponse({ ok: false, error: "Unauthorized" }, 401, corsHeaders);
-        }
-
-        // 4A. Register / Sync a Z6-... license from Owner Studio
-        if (path === "/api/v1/admin/register-license" && request.method === "POST") {
-          const body = await safeBody(request);
-          const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
-          const wm = String(body.watermark || "").trim().toUpperCase().slice(0, 24);
-          const name = String(body.client_name || "").trim().slice(0, 120);
-          const hwid = String(body.hwid_bound || "").trim().toUpperCase().slice(0, 32);
-          const tier = VALID_TIERS.has(String(body.tier || "").toUpperCase()) ? String(body.tier).toUpperCase() : "PRO";
-          const exp = body.expires_at ? String(body.expires_at).trim().slice(0, 32) : null;
-          const notes = String(body.notes || "").trim().slice(0, 250);
-
-          if (!KEY_RE.test(key) || !name) {
-            return jsonResponse({ ok: false, error: "Valid license_key (Z6-...) and client_name are required." }, 400, corsHeaders);
-          }
-
-          await env.DB.prepare(
-            `INSERT INTO licenses (license_key, watermark, client_name, tier, status, hwid_bound, expires_at, notes, updated_at)
-             VALUES (?, ?, ?, ?, 'ACTIVE', ?, ?, ?, datetime('now'))
-             ON CONFLICT(license_key) DO UPDATE SET
-               watermark = excluded.watermark,
-               client_name = excluded.client_name,
-               tier = excluded.tier,
-               hwid_bound = excluded.hwid_bound,
-               expires_at = excluded.expires_at,
-               notes = excluded.notes,
-               updated_at = datetime('now')`
-          ).bind(key, wm, name, tier, hwid, exp, notes).run();
-
-          await syncToGoogleSheet(env, "Active Licenses", [new Date().toISOString(), wm, name, tier, hwid, key, exp || "LIFETIME", "ACTIVE", notes]);
-          return jsonResponse({ ok: true, license_key: key, watermark: wm, status: "ACTIVE" }, 200, corsHeaders);
-        }
-
-        // 4B. Publish New Version & HTTPS Download URL
-        if (path === "/api/v1/admin/update-release" && request.method === "POST") {
-          const body = await safeBody(request);
-          const lver = body.latest_version ? String(body.latest_version).trim().slice(0, 24) : null;
-          const mver = body.min_supported_version ? String(body.min_supported_version).trim().slice(0, 24) : null;
-          const durl = body.download_url ? String(body.download_url).trim().slice(0, 500) : null;
-          const rnote = body.release_notes ? String(body.release_notes).trim().slice(0, 600) : null;
-
-          if (durl && !durl.startsWith("https://")) {
-            return jsonResponse({ ok: false, error: "download_url must start with https://" }, 400, corsHeaders);
-          }
-
-          await env.DB.prepare(
-            `UPDATE app_config SET
-              latest_version = COALESCE(?, latest_version),
-              min_supported_version = COALESCE(?, min_supported_version),
-              download_url = COALESCE(?, download_url),
-              release_notes = COALESCE(?, release_notes),
-              updated_at = datetime('now')
-             WHERE id = 1`
-          ).bind(lver, mver, durl, rnote).run();
-
-          return jsonResponse({ ok: true, message: "Release configuration updated." }, 200, corsHeaders);
-        }
-
-        // 4C. Set License Status (Strict enum + 404 if not found)
-        if (path === "/api/v1/admin/set-status" && request.method === "POST") {
-          const body = await safeBody(request);
-          const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
-          const status = String(body.status || "").trim().toUpperCase();
-          if (!KEY_RE.test(key) || !VALID_STATUSES.has(status)) {
-            return jsonResponse({ ok: false, error: "Valid license_key and status (ACTIVE|SUSPENDED|REVOKED) required." }, 400, corsHeaders);
-          }
-          const res = await env.DB.prepare(
-            "UPDATE licenses SET status = ?, updated_at = datetime('now') WHERE license_key = ?"
-          ).bind(status, key).run();
-          if (!res.meta || res.meta.changes === 0) {
-            return jsonResponse({ ok: false, error: "License key not found." }, 404, corsHeaders);
-          }
-          return jsonResponse({ ok: true, license_key: key, status }, 200, corsHeaders);
-        }
-
-        // 4D. List Licenses
-        if (path === "/api/v1/admin/list-licenses" && request.method === "GET") {
-          const { results } = await env.DB.prepare(
-            "SELECT license_key, watermark, client_name, tier, status, hwid_bound, expires_at, created_at FROM licenses ORDER BY id DESC LIMIT 100"
-          ).all();
-          return jsonResponse({ ok: true, licenses: results || [] }, 200, corsHeaders);
-        }
-
-        // 4D-2. List & Update Website Inquiries
-        if (path === "/api/v1/admin/inquiries" && request.method === "GET") {
-          const { results } = await env.DB.prepare(
-            "SELECT ref_code, client_name, contact_info, cad_version, hwid_submitted, plan_tier, payment_method, notes, status, progress_stage, status_note, created_at FROM inquiries ORDER BY id DESC LIMIT 100"
-          ).all();
-          return jsonResponse({ ok: true, inquiries: results || [] }, 200, corsHeaders);
-        }
-
-        if (path === "/api/v1/admin/inquiry-status" && request.method === "POST") {
-          const body = await safeBody(request);
-          const ref = String(body.ref_code || "").trim().toUpperCase().slice(0, 16);
-          const st = String(body.status || "").trim().toUpperCase();
-          const STAGE_MAP = {
-            RECEIVED: [1, "Inquiry received and queued for review."],
-            VERIFYING_PAYMENT: [2, "Verifying payment and workstation details."],
-            BUILDING_LICENSE: [3, "Preparing your hardware-bound ZGE package."],
-            READY_FOR_DELIVERY: [4, "Package ready — delivered via private Discord or Messenger."],
-            COMPLETED: [5, "License activated and verified. Welcome to ZGE Suite!"],
-            BLOCKED: [0, "Request declined or blocked by administrator."]
-          };
-          if (!ref || !STAGE_MAP[st]) {
-            return jsonResponse({ ok: false, error: "Valid ref_code and stage status required." }, 400, corsHeaders);
-          }
-          const [stageNum, defaultNote] = STAGE_MAP[st];
-          const note = String(body.status_note || defaultNote).trim().slice(0, 220);
-          const hwidBackfill = HWID_RE.test(String(body.hwid_submitted || "").trim().toUpperCase())
-            ? String(body.hwid_submitted).trim().toUpperCase() : "";
-          await env.DB.prepare(
-            "UPDATE inquiries SET status = ?, progress_stage = ?, status_note = ?, hwid_submitted = CASE WHEN ? != '' THEN ? ELSE hwid_submitted END, updated_at = datetime('now') WHERE ref_code = ?"
-          ).bind(st, stageNum, note, hwidBackfill, hwidBackfill, ref).run();
-          await sendDiscordInquiry(env, `Status Updated: ${ref}`, `New Stage: ${st} (${stageNum}/5)\nNote: ${note}`, st === "BLOCKED" ? 0xf43f5e : 0x10b981);
-          return jsonResponse({ ok: true, ref_code: ref, status: st, progress_stage: stageNum, status_note: note }, 200, corsHeaders);
-        }
-
-        // 4D-3. HWID Blocklist Management (Ban / Unban specific PCs)
-        if (path === "/api/v1/admin/block-hwid" && request.method === "POST") {
-          const body = await safeBody(request);
-          const hwid = String(body.hwid || "").trim().toUpperCase().slice(0, 32);
-          const reason = String(body.reason || "Unauthorized sharing or tampering").trim().slice(0, 200);
-          if (!HWID_RE.test(hwid)) {
-            return jsonResponse({ ok: false, error: "Valid HWID (ZGE-XXXX-XXXX-XXXX) required." }, 400, corsHeaders);
-          }
-          await env.DB.prepare(
-            "INSERT INTO blocked_hwids (hwid, reason, blocked_at) VALUES (?, ?, datetime('now')) ON CONFLICT(hwid) DO UPDATE SET reason = excluded.reason, blocked_at = datetime('now')"
-          ).bind(hwid, reason).run();
-          await env.DB.prepare("UPDATE licenses SET status = 'REVOKED', updated_at = datetime('now') WHERE hwid_bound = ?").bind(hwid).run();
-          return jsonResponse({ ok: true, hwid, status: "BLOCKED" }, 200, corsHeaders);
-        }
-
-        if (path === "/api/v1/admin/unblock-hwid" && request.method === "POST") {
-          const body = await safeBody(request);
-          const hwid = String(body.hwid || "").trim().toUpperCase().slice(0, 32);
-          if (!HWID_RE.test(hwid)) {
-            return jsonResponse({ ok: false, error: "Valid HWID required." }, 400, corsHeaders);
-          }
-          await env.DB.prepare("DELETE FROM blocked_hwids WHERE hwid = ?").bind(hwid).run();
-          return jsonResponse({ ok: true, hwid, status: "UNBLOCKED" }, 200, corsHeaders);
-        }
-
-        if (path === "/api/v1/admin/blocked-hwids" && request.method === "GET") {
-          const { results } = await env.DB.prepare("SELECT hwid, reason, blocked_at FROM blocked_hwids ORDER BY blocked_at DESC LIMIT 100").all();
-          return jsonResponse({ ok: true, blocked: results || [] }, 200, corsHeaders);
-        }
-
-        // 4D-4. System Connection Health Check (checks D1 tables + configured secrets without exposing values)
-        if (path === "/api/v1/admin/health" && request.method === "GET") {
-          const tbls = (await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table'").all()).results || [];
-          const names = tbls.map(t => t.name);
-          const required = ["app_config", "licenses", "heartbeats", "piracy_alerts", "rate_limits", "inquiries", "blocked_hwids"];
-          const missing = required.filter(r => !names.includes(r));
-          return jsonResponse({
-            ok: missing.length === 0,
-            d1_tables_found: names,
-            missing_tables: missing,
-            security_webhook_configured: String(env.DISCORD_WEBHOOK_URL || "").startsWith("https://discord.com/api/webhooks/"),
-            inquiry_webhook_configured: String(env.DISCORD_INQUIRY_WEBHOOK_URL || "").startsWith("https://discord.com/api/webhooks/"),
-            google_sheet_sync_configured: String(env.GOOGLE_SHEET_WEBHOOK_URL || "").startsWith("https://script.google.com/macros/s/") && Boolean(env.GOOGLE_SHEET_SECRET)
-          }, 200, corsHeaders);
-        }
-
-        // 4E. Owner Studio Section 4 & monitor_dashboard.html Compatibility (/api/admin/logs & /api/admin/revoke)
-        if (path === "/api/admin/logs" && request.method === "GET") {
-          const alerts = (await env.DB.prepare("SELECT * FROM piracy_alerts ORDER BY detected_at DESC LIMIT 100").all()).results || [];
-          const heartbeats = (await env.DB.prepare("SELECT * FROM heartbeats ORDER BY seen_at DESC LIMIT 100").all()).results || [];
-          return jsonResponse({ ok: true, alerts, heartbeats }, 200, corsHeaders);
-        }
-
-        if (path === "/api/admin/revoke" && request.method === "POST") {
-          const body = await safeBody(request);
-          const key = String(body.license_key || "").trim().toUpperCase().slice(0, 32);
-          const wm = String(body.watermark || "").trim().toUpperCase().slice(0, 24);
-          if (!KEY_RE.test(key)) {
-            return jsonResponse({ ok: false, error: "Invalid license_key." }, 400, corsHeaders);
-          }
-          await env.DB.prepare(
-            `INSERT INTO licenses (license_key, watermark, client_name, status, updated_at)
-             VALUES (?, ?, 'Revoked Record', 'REVOKED', datetime('now'))
-             ON CONFLICT(license_key) DO UPDATE SET status = 'REVOKED', updated_at = datetime('now')`
-          ).bind(key, wm).run();
-          return jsonResponse({ ok: true, license_key: key, status: "REVOKED" }, 200, corsHeaders);
-        }
-      }
-
-      return jsonResponse({ ok: false, error: "Not found" }, 404, corsHeaders);
-    } catch (err) {
-      return jsonResponse({ ok: false, error: "Internal server error" }, 500, corsHeaders);
+    function runMode(m) {
+      curMode = m;
+      document.getElementById("vpReadout").textContent = MODES[m].title;
+      document.getElementById("hudTag").textContent = MODES[m].tag;
+      if (animId) cancelAnimationFrame(animId);
+      animT = 0; drawFrame();
     }
-  }
-};
-
-function jsonResponse(data, status = 200, headers = {}) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { "Content-Type": "application/json", ...headers }
-  });
-}
-
-async function safeBody(request) {
-  try {
-    const obj = await request.json();
-    return obj && typeof obj === "object" ? obj : {};
-  } catch {
-    return {};
-  }
-}
-
-async function timingSafeEqualStr(a, b) {
-  const enc = new TextEncoder();
-  const ha = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(a)));
-  const hb = new Uint8Array(await crypto.subtle.digest("SHA-256", enc.encode(b)));
-  let diff = 0;
-  for (let i = 0; i < ha.length; i++) diff |= ha[i] ^ hb[i];
-  return diff === 0;
-}
-
-async function allowRate(db, bucketKey, maxHits, windowSec) {
-  const now = Math.floor(Date.now() / 1000);
-  const row = await db.prepare("SELECT hits, window_start FROM rate_limits WHERE bucket_key = ?").bind(bucketKey).first();
-  if (!row || now - row.window_start >= windowSec) {
-    await db.prepare(
-      "INSERT INTO rate_limits (bucket_key, hits, window_start) VALUES (?, 1, ?) ON CONFLICT(bucket_key) DO UPDATE SET hits = 1, window_start = excluded.window_start"
-    ).bind(bucketKey, now).run();
-    return true;
-  }
-  if (row.hits >= maxHits) return false;
-  await db.prepare("UPDATE rate_limits SET hits = hits + 1 WHERE bucket_key = ?").bind(bucketKey).run();
-  return true;
-}
-
-function maskName(name) {
-  if (!name || name.length < 3) return "***";
-  return name[0] + "*".repeat(Math.min(name.length - 2, 12)) + name[name.length - 1];
-}
-
-async function sendDiscordInquiry(env, title, description, color = 0x38bdf8) {
-  const hook = String(env.DISCORD_INQUIRY_WEBHOOK_URL || "").trim();
-  if (!hook.startsWith("https://discord.com/api/webhooks/")) return;
-  try {
-    await fetch(hook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        embeds: [{ title: `ZGE Inquiry: ${title}`, description, color, timestamp: new Date().toISOString() }]
-      })
+    document.getElementById("vpModes").addEventListener("click", (e) => {
+      const b = e.target.closest(".vp-mode-btn");
+      if (!b) return;
+      document.querySelectorAll("#vpModes .vp-mode-btn").forEach(x => x.classList.remove("active"));
+      b.classList.add("active");
+      runMode(Number(b.dataset.mode));
     });
-  } catch (_) {}
-}
+    document.getElementById("replayBtn").onclick = () => runMode(curMode);
+    runMode(0);
 
-async function sendDiscordAlert(env, title, description, color = 0xd4a353) {
-  const hook = String(env.DISCORD_WEBHOOK_URL || "").trim();
-  if (!hook.startsWith("https://discord.com/api/webhooks/")) return;
-  try {
-    await fetch(hook, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        embeds: [{ title: `ZGE Security: ${title}`, description, color, timestamp: new Date().toISOString() }]
-      })
-    });
-  } catch (_) {}
-}
 
-async function syncToGoogleSheet(env, sheetName, rowValues) {
-  const url = String(env.GOOGLE_SHEET_WEBHOOK_URL || "").trim();
-  const sec = String(env.GOOGLE_SHEET_SECRET || "").trim();
-  if (!url.startsWith("https://script.google.com/macros/s/")) return;
-  try {
-    await fetch(url, {
-      method: "POST",
-      redirect: "follow",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ secret: sec, sheet: sheetName, row: rowValues })
-    });
-  } catch (_) {}
-}
+
+    // Official Authenticity Origin Check
+    (function checkOrigin() {
+      const host = (window.location.hostname || "").toLowerCase();
+      const el = document.getElementById("originCheckText");
+      if (!el) return;
+      if (host === "zge-geodetic-suite-web.pages.dev") {
+        el.innerHTML = '<span style="color:#34d399;font-weight:700;">VERIFIED OFFICIAL DOMAIN:</span> zge-geodetic-suite-web.pages.dev (HTTPS Protected)';
+      } else {
+        el.innerHTML = 'Preview Mode &bull; Official live portal: <strong style="color:#34d399;">zge-geodetic-suite-web.pages.dev</strong>';
+      }
+    })();
+
+  
+    // === 100% Read-Only GET_ZGE_MACHINE_ID.bat Viewer & 1-Click Local Blob Download ===
+    const HWID_BAT_SOURCE = "@echo off\r\nsetlocal\r\ntitle ZGE Geodetic Suite v7.7 Smart Pro - Standalone Machine ID Finder (No AutoCAD Needed)\r\nset \"ZGE_HWID=\"\r\n\r\n:: Primary: PowerShell 64-bit/native (zero temp file drops; works on Windows 10 & Windows 11 24H2+)\r\nfor /f \"usebackq delims=\" %%H in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^\r\n  \"$ErrorActionPreference='SilentlyContinue';\" ^\r\n  \"function Mix16([string]$s,[int]$seed){$h=[Math]::Abs($seed)%%65521;for($i=1;$i -le $s.Length;$i++){$ch=[int][char]$s[$i-1];$h=(($h*137)+($ch*29)+($i*19)+7)%%65521};(($h*251)+($seed%%997)+13)%%65521}\" ^\r\n  \"function Hex4([int]$n){'{0:X4}' -f ([Math]::Abs($n)%%65536)}\" ^\r\n  \"function SafeReg([string]$p,[string]$n,[string]$fb){$v=(Get-ItemProperty -Path $p -Name $n -ErrorAction SilentlyContinue).$n;if([string]::IsNullOrEmpty($v)){$fb}else{[string]$v}}\" ^\r\n  \"$vol='00000000';try{$fso=New-Object -ComObject Scripting.FileSystemObject;$vol=[string]([int32]$fso.GetDrive('C:').SerialNumber)}catch{}\" ^\r\n  \"$mguid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' 'MachineGuid' 'NOGUID';\" ^\r\n  \"$cname=if($env:COMPUTERNAME){$env:COMPUTERNAME}else{'UNKNOWN'};\" ^\r\n  \"$board=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\BIOS' 'BaseBoardProduct' 'NOBRD';\" ^\r\n  \"$cpu=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0' 'ProcessorNameString' 'NOCPU';\" ^\r\n  \"$pid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion' 'ProductId' 'NOPID';\" ^\r\n  \"$raw=('ZGE7HW|'+$vol+'|'+$mguid+'|'+$cname+'|'+$board+'|'+$cpu+'|'+$pid).ToUpper();\" ^\r\n  \"'ZGE-'+$(Hex4 (Mix16 $raw 5381))+'-'+$(Hex4 (Mix16 $raw 31337))+'-'+$(Hex4 (Mix16 $raw 49157))\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n\r\n:: Fallback: VBScript (for older Windows 7/8 or locked PowerShell policies)\r\nif not defined ZGE_HWID (\r\n  set \"TMPVBS=%TEMP%\\zge_hwid_check_%RANDOM%.vbs\"\r\n  > \"%TMPVBS%\" (\r\n    echo Option Explicit\r\n    echo Function Mix16^(s, seed^)\r\n    echo   Dim h, i, ch\r\n    echo   h = Abs^(seed^) Mod 65521\r\n    echo   For i = 1 To Len^(s^)\r\n    echo     ch = Asc^(Mid^(s, i, 1^)^)\r\n    echo     h = ^(^(h * 137^) + ^(ch * 29^) + ^(i * 19^) + 7^) Mod 65521\r\n    echo   Next\r\n    echo   h = ^(^(h * 251^) + ^(seed Mod 997^) + 13^) Mod 65521\r\n    echo   Mix16 = h\r\n    echo End Function\r\n    echo Function Hex4^(n^)\r\n    echo   Dim s\r\n    echo   s = Hex^(Abs^(Int^(n^)^) Mod 65536^)\r\n    echo   Do While Len^(s^) ^< 4 : s = \"0\" ^& s : Loop\r\n    echo   Hex4 = UCase^(s^)\r\n    echo End Function\r\n    echo Function SafeReg^(wsh, path, fallback^)\r\n    echo   On Error Resume Next\r\n    echo   Dim v : v = wsh.RegRead^(path^)\r\n    echo   If Err.Number ^<^> 0 Or IsEmpty^(v^) Or Len^(CStr^(v^)^) = 0 Then\r\n    echo     Err.Clear : SafeReg = fallback\r\n    echo   Else\r\n    echo     SafeReg = CStr^(v^)\r\n    echo   End If\r\n    echo   On Error GoTo 0\r\n    echo End Function\r\n    echo Dim fso, drv, wsh, vol, mguid, cname, board, cpu, pid, raw\r\n    echo vol = \"00000000\"\r\n    echo On Error Resume Next\r\n    echo Set fso = CreateObject^(\"Scripting.FileSystemObject\"^)\r\n    echo If Not fso Is Nothing Then Set drv = fso.GetDrive^(\"C:\"^) : vol = CStr^(CLng^(drv.SerialNumber^)^)\r\n    echo Err.Clear\r\n    echo Set wsh = CreateObject^(\"WScript.Shell\"^)\r\n    echo mguid = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid\", \"NOGUID\"^)\r\n    echo cname = wsh.ExpandEnvironmentStrings^(\"%%COMPUTERNAME%%\"^)\r\n    echo If Err.Number ^<^> 0 Or cname = \"%%COMPUTERNAME%%\" Then cname = \"UNKNOWN\" : Err.Clear\r\n    echo board = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS\\BaseBoardProduct\", \"NOBRD\"^)\r\n    echo cpu   = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0\\ProcessorNameString\", \"NOCPU\"^)\r\n    echo pid   = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProductId\", \"NOPID\"^)\r\n    echo On Error GoTo 0\r\n    echo raw = UCase^(\"ZGE7HW|\" ^& vol ^& \"|\" ^& mguid ^& \"|\" ^& cname ^& \"|\" ^& board ^& \"|\" ^& cpu ^& \"|\" ^& pid^)\r\n    echo WScript.Echo \"ZGE-\" ^& Hex4^(Mix16^(raw, 5381^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 31337^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 49157^)^)\r\n  )\r\n  for /f \"usebackq delims=\" %%H in (`cscript //nologo \"%TMPVBS%\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n  del /f /q \"%TMPVBS%\" >nul 2>&1\r\n)\r\n\r\necho.\r\necho ========================================================================\r\necho   ZGE COMPLETE GEODETIC ^& GIS SUITE v7.7 SMART PRO \u2014 MACHINE ID\r\necho   (Zero AutoCAD Needed ^| Exact 5-Factor Read-Only Hardware Fingerprint)\r\necho ========================================================================\r\necho.\r\nif not defined ZGE_HWID (\r\n  echo   [ERROR] Could not read Machine ID due to Windows policy restrictions.\r\n  echo   Alternative: Open AutoCAD, install ZGE_Suite, and type ZGEACT to view\r\n  echo   your Machine ID directly inside AutoCAD.\r\n  echo ========================================================================\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\necho   YOUR MACHINE ID :  %ZGE_HWID%\r\necho.\r\necho ========================================================================\r\necho %ZGE_HWID%| clip >nul 2>&1\r\necho   [COPIED] Automatically copied to your clipboard!\r\necho   Paste this Machine ID into the ZGE Website Inquiry Form or send it\r\necho   to official ZGE Support (Discord / Facebook).\r\necho ========================================================================\r\necho.\r\npause\r\n";
+    const batPreviewEl = document.getElementById("hwidBatPreview");
+    if (batPreviewEl) batPreviewEl.textContent = HWID_BAT_SOURCE;
+    const dlBatBtn = document.getElementById("dlHwidBatBtn");
+    if (dlBatBtn) {
+      dlBatBtn.addEventListener("click", () => {
+        const blob = new Blob([HWID_BAT_SOURCE], { type: "application/octet-stream" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "GET_ZGE_MACHINE_ID.bat";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      });
+    }
+
+  
+    // 24/7 Pre-Sales & Negotiation Assistant Logic
+    (function initZgeBot() {
+      const tgl = document.getElementById("zgeBotToggle");
+      const pnl = document.getElementById("zgeBotPanel");
+      if (!tgl || !pnl) return;
+      tgl.addEventListener("click", () => {
+        pnl.style.display = pnl.style.display === "block" ? "none" : "block";
+      });
+      window.botReply = function(topic) {
+        const box = document.getElementById("botMessages");
+        const answers = {
+          compat: "Works on any existing Windows installation of full AutoCAD or Civil 3D (2013 to 2026+), 100% offline after activation — compatible with both licensed and offline/firewall-blocked workstations. (Autodesk installer not included.)",
+          student: "Yes! BSGE students and multi-seat survey firms (3+ seats) qualify for special discounted tiers. Fill out the quick Offer Ticket below with your role and seat count, and the developer will reply with your tailored quote.",
+          hwid: "Go to the Inquiry Form tab above and click 'Download GET_ZGE_MACHINE_ID.bat'. You can inspect its full 100% read-only source code first before running it on your AutoCAD PC.",
+          safe: "100% offline CAD processing — your DWG/TCT files never leave your PC. Official Policy (Seal ZGE-PH-2026): We NEVER ask for passwords, PINs, OTPs, card details, or Autodesk logins."
+        };
+        const msg = document.createElement("div");
+        msg.style.marginTop = "7px";
+        msg.style.color = "#e2e8f0";
+        msg.innerHTML = "<strong style='color:#34d399;'>ZGE Bot:</strong> " + (answers[topic] || "");
+        box.appendChild(msg);
+        box.scrollTop = box.scrollHeight;
+      };
+      const form = document.getElementById("botOfferForm");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById("botOfferBtn");
+        const resEl = document.getElementById("botOfferRes");
+        btn.disabled = true; btn.textContent = "Sending offer...";
+        resEl.style.display = "block"; resEl.textContent = "Logging offer ticket...";
+        try {
+          const r = await fetch(CONFIG.WORKER_URL + "/api/v1/public/negotiate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              client_name: document.getElementById("botName").value.trim(),
+              contact_info: document.getElementById("botContact").value.trim(),
+              buyer_role: document.getElementById("botRole").value,
+              seats: parseInt(document.getElementById("botSeats").value, 10) || 1,
+              proposed_budget: document.getElementById("botBudget").value.trim(),
+              message: document.getElementById("botMsg").value.trim(),
+              website_hp: document.getElementById("botHp").value
+            })
+          });
+          const d = await r.json();
+          if (!r.ok || !d.ok) throw new Error(d.error || "Could not submit offer.");
+          resEl.style.background = "#052e16"; resEl.style.color = "#a7f3d0";
+          resEl.textContent = d.message;
+          form.reset();
+        } catch (err) {
+          resEl.style.background = "#450a0a"; resEl.style.color = "#fecaca";
+          resEl.textContent = err.message || "Network error. Please message Discord/FB directly.";
+        } finally {
+          btn.disabled = false; btn.textContent = "Send Offer Ticket to Developer";
+        }
+      });
+    })();
+
+</script>
+
+  <!-- 24/7 Automated Pre-Sales & Negotiation Assistant (Zero-Cost Client + Worker Offer Ticket) -->
+  <button id="zgeBotToggle" type="button" aria-label="Open 24/7 ZGE Assistant & Offer Bot"
+    style="position:fixed;right:20px;bottom:20px;z-index:9990;background:linear-gradient(135deg,#059669,#0f766e);color:#fff;border:1px solid #34d399;border-radius:999px;padding:11px 16px;font-family:var(--mono);font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,0.45);">
+    24/7 Assistant &amp; Offer Bot
+  </button>
+
+  <aside id="zgeBotPanel" aria-label="ZGE 24/7 Assistant"
+    style="display:none;position:fixed;right:20px;bottom:74px;z-index:9991;width:min(365px,calc(100vw - 28px));max-height:78vh;overflow-y:auto;background:#090f1a;border:1px solid #1f3349;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.65);color:#e2e8f0;font-family:var(--sans);">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#0d1829;border-bottom:1px solid #1f3349;border-radius:14px 14px 0 0;">
+      <div>
+        <div style="font-weight:700;font-size:0.9rem;color:#34d399;">ZGE 24/7 Buyer Assistant</div>
+        <div style="font-size:0.72rem;color:#94a3b8;">Auto-answers &amp; Offer Negotiation while dev is away</div>
+      </div>
+      <button type="button" onclick="document.getElementById('zgeBotPanel').style.display='none'"
+        style="background:transparent;border:none;color:#94a3b8;font-size:1.1rem;cursor:pointer;">&times;</button>
+    </div>
+    <div style="padding:12px 14px;">
+      <div id="botMessages" style="background:#050912;border:1px solid #172538;border-radius:8px;padding:10px;font-size:0.8rem;line-height:1.48;min-height:92px;max-height:165px;overflow-y:auto;margin-bottom:10px;">
+        <div style="color:#a7f3d0;"><strong>ZGE Bot:</strong> Hi! Ask me anything below, or submit a student / solo / group offer — I will log it with an <code>OFFER-XXXXXX</code> code and notify the developer immediately!</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+        <button type="button" class="bot-chip" onclick="botReply('compat')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">AutoCAD / Civil 3D?</button>
+        <button type="button" class="bot-chip" onclick="botReply('student')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">Student / Group Discount</button>
+        <button type="button" class="bot-chip" onclick="botReply('hwid')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">How to get Machine ID?</button>
+        <button type="button" class="bot-chip" onclick="botReply('safe')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">Is it safe / offline?</button>
+      </div>
+      <form id="botOfferForm" style="border-top:1px solid #1f3349;padding-top:10px;display:flex;flex-direction:column;gap:7px;">
+        <div style="font-size:0.76rem;font-weight:700;color:#fbbf24;">Submit a Custom Offer / Negotiation Ticket</div>
+        <input id="botName" type="text" placeholder="Your Name" required style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
+        <input id="botContact" type="text" placeholder="FB Name / Discord @handle / Email" required style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
+        <div style="display:grid;grid-template-columns:1fr 78px;gap:6px;">
+          <select id="botRole" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 8px;font-size:0.78rem;">
+            <option value="BSGE Student">BSGE Student</option>
+            <option value="Solo Practicing GE">Solo Practicing GE</option>
+            <option value="Survey Firm / Group">Survey Firm / 3+ Seats</option>
+          </select>
+          <input id="botSeats" type="number" min="1" max="50" value="1" title="Seats" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 8px;font-size:0.78rem;">
+        </div>
+        <input id="botBudget" type="text" placeholder="Target Budget or Request (e.g., Student rate / 3-seat bundle)" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
+        <input id="botMsg" type="text" placeholder="Short note (optional)" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
+        <input id="botHp" type="text" tabindex="-1" autocomplete="off" style="display:none;">
+        <label style="display:flex;align-items:flex-start;gap:6px;font-size:0.7rem;color:#94a3b8;cursor:pointer;">
+          <input id="botPrivacy" type="checkbox" required style="margin-top:2px;accent-color:#10b981;">
+          <span>I consent under PH RA 10173 to log my contact &amp; offer request for developer reply only.</span>
+        </label>
+        <button id="botOfferBtn" type="submit" style="background:#059669;color:#fff;border:none;border-radius:7px;padding:8px 10px;font-weight:700;font-size:0.78rem;cursor:pointer;">Send Offer Ticket to Developer</button>
+        <div id="botOfferRes" style="display:none;font-size:0.75rem;color:#a7f3d0;padding:6px 8px;background:#052e16;border-radius:6px;"></div>
+      </form>
+    </div>
+  </aside>
+
+</body>
+</html>
