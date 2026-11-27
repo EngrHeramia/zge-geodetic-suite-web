@@ -1,1071 +1,1062 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>ZGE Geodetic Suite v7.7 — Tactical AutoCAD Automation for Philippine GEs</title>
-<meta name="description" content="Proprietary 100% offline-first Philippine Geodetic Engineering &amp; GIS automation natively inside AutoCAD and Civil 3D (2013-2026+). Built by Wendell Heramia." />
-<link rel="preconnect" href="https://fonts.googleapis.com" />
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<style>
-  :root {
-    --bg: #05070c;
-    --bg2: #080c15;
-    --panel: rgba(13, 19, 32, 0.86);
-    --panel-solid: #0d1320;
-    --border: rgba(148, 163, 184, 0.14);
-    --border-em: rgba(16, 185, 129, 0.42);
-    --border-au: rgba(245, 158, 11, 0.40);
-    --text: #f8fafc;
-    --dim: #94a3b8;
-    --em: #10b981;
-    --em-hi: #34d399;
-    --au: #f59e0b;
-    --au-hi: #fbbf24;
-    --cyan: #38bdf8;
-    --danger: #f43f5e;
-    --display: 'Chakra Petch', system-ui, sans-serif;
-    --sans: 'Inter', system-ui, -apple-system, sans-serif;
-    --mono: 'JetBrains Mono', Consolas, monospace;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ZGE Complete Geodetic &amp; GIS Suite v7.7 — Native AutoCAD &amp; Civil 3D Software</title>
+  <meta name="description" content="Commercial Philippine Geodetic Engineering & GIS automation plugin for AutoCAD and Civil 3D (2013-2026+). 100% offline." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --dark-bg: #080d16;
+      --dark-panel: #0f1726;
+      --light-bg: #f8fafc;
+      --white: #ffffff;
+      --ink: #0f172a;
+      --ink-muted: #475569;
+      --border-l: #e2e8f0;
+      --border-d: rgba(148, 163, 184, 0.18);
+      --em: #059669;
+      --em-hi: #10b981;
+      --cyan: #00e5ff;
+      --gold: #d97706;
+      --danger: #e11d48;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --display: 'Plus Jakarta Sans', 'Inter', sans-serif;
+      --mono: 'JetBrains Mono', ui-monospace, monospace;
+      --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
 
-  * { box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    margin: 0; background: var(--bg); color: var(--text);
-    font-family: var(--sans); font-size: 15.5px; line-height: 1.6;
-    -webkit-font-smoothing: antialiased; overflow-x: hidden;
-  }
-  /* Subtle precision tactical grid backdrop */
-  body::before {
-    content: ''; position: fixed; inset: 0; z-index: -2; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(16, 185, 129, 0.035) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(16, 185, 129, 0.035) 1px, transparent 1px);
-    background-size: 48px 48px;
-  }
-  body::after {
-    content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
-    background:
-      radial-gradient(ellipse 65% 45% at 78% 8%, rgba(16, 185, 129, 0.13), transparent 70%),
-      radial-gradient(ellipse 50% 40% at 15% 85%, rgba(245, 158, 11, 0.07), transparent 70%);
-  }
+    *, *::before, *::after { box-sizing: border-box; }
+    html { scroll-behavior: smooth; overflow-x: clip; max-width: 100%; }
+    body {
+      margin: 0; padding: 0; background: var(--white); color: var(--ink);
+      font-family: var(--sans); line-height: 1.6; overflow-x: clip; max-width: 100%;
+      -webkit-font-smoothing: antialiased;
+    }
+    .container { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
 
-  a { color: inherit; text-decoration: none; }
-  code { font-family: var(--mono); font-size: 0.84em; color: var(--em-hi); background: rgba(16,185,129,0.1); padding: 2px 6px; border-radius: 5px; }
+    /* === TOP PROGRESS BAR === */
+    #scrollProg {
+      position: fixed; top: 0; left: 0; height: 3px; width: 0%; z-index: 10000;
+      background: linear-gradient(90deg, var(--em-hi), var(--cyan)); pointer-events: none;
+    }
 
-  /* Top Kinetic Reading Bar */
-  #scrollBar {
-    position: fixed; top: 0; left: 0; height: 3px; width: 0%; z-index: 1200;
-    background: linear-gradient(90deg, var(--em), var(--au), var(--cyan));
-    box-shadow: 0 0 12px rgba(16, 185, 129, 0.7); pointer-events: none;
-  }
+    /* === REAL COMMERCIAL SOFTWARE NAVBAR (STICKY GLASS) === */
+    .navbar {
+      position: sticky; top: 0; z-index: 900;
+      background: rgba(8, 13, 22, 0.9); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+    }
+    .nav-inner {
+      height: 68px; display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    }
+    .brand {
+      display: inline-flex; align-items: center; gap: 10px;
+      text-decoration: none; color: #fff; font-family: var(--display); font-weight: 800; font-size: 1rem; letter-spacing: -0.02em;
+    }
+    .brand-mark {
+      width: 34px; height: 34px; border-radius: 9px;
+      background: linear-gradient(135deg, #059669, #0284c7);
+      color: #fff; font-family: var(--mono); font-weight: 700; font-size: 0.78rem;
+      display: grid; place-items: center;
+    }
+    .nav-menu { display: flex; align-items: center; gap: 22px; list-style: none; margin: 0; padding: 0; }
+    .nav-menu a, .nav-menu button {
+      background: none; border: none; padding: 0; cursor: pointer;
+      color: #cbd5e1; text-decoration: none; font-family: var(--sans); font-size: 0.87rem; font-weight: 500;
+      transition: color 0.18s ease;
+    }
+    .nav-menu a:hover, .nav-menu button:hover { color: #fff; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .status-chip {
+      display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px;
+      background: rgba(16, 185, 129, 0.12); border: 1px solid rgba(16, 185, 129, 0.35);
+      font-family: var(--mono); font-size: 0.7rem; color: #34d399; white-space: nowrap;
+    }
+    .pulse { width: 7px; height: 7px; border-radius: 50%; background: #34d399; animation: sonar 2.2s infinite; }
+    @keyframes sonar { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.65); } 70% { box-shadow: 0 0 0 8px rgba(52,211,153,0); } 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0); } }
 
-  .wrap { max-width: 1140px; margin: 0 auto; padding: 0 22px; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+      padding: 11px 20px; border-radius: 10px; font-family: var(--sans); font-weight: 600; font-size: 0.88rem;
+      cursor: pointer; text-decoration: none; border: 1px solid transparent;
+      transition: transform 0.2s var(--ease), box-shadow 0.2s ease, background 0.18s ease;
+    }
+    .btn-primary { background: var(--em); color: #fff; box-shadow: 0 8px 22px rgba(5, 150, 105, 0.28); }
+    .btn-primary:hover { background: #047857; transform: translateY(-2px); box-shadow: 0 14px 28px rgba(5, 150, 105, 0.36); }
+    .btn-dark-ghost { background: rgba(255,255,255,0.06); color: #f8fafc; border-color: rgba(255,255,255,0.16); }
+    .btn-dark-ghost:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.3); }
+    .btn-light-ghost { background: #fff; color: var(--ink); border-color: #cbd5e1; }
+    .btn-light-ghost:hover { border-color: var(--em); color: var(--em); background: #ecfdf5; }
+    .btn-sm { padding: 8px 14px; font-size: 0.8rem; }
 
-  /* Glass Tactical Header */
-  header.nav {
-    position: sticky; top: 0; z-index: 900;
-    background: rgba(5, 7, 12, 0.82); backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--border);
-  }
-  .nav-in { display: flex; align-items: center; justify-content: space-between; height: 66px; gap: 16px; }
-  .brand { display: flex; align-items: center; gap: 11px; font-family: var(--display); font-weight: 700; font-size: 1.15rem; letter-spacing: 0.02em; }
-  .brand-hex {
-    width: 34px; height: 34px; border-radius: 9px; position: relative;
-    background: linear-gradient(135deg, var(--em), #059669);
-    display: grid; place-items: center; color: #022c22; font-family: var(--mono); font-weight: 800; font-size: 0.82rem;
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.35);
-  }
-  .nav-links { display: flex; gap: 24px; font-size: 0.86rem; font-weight: 500; color: var(--dim); }
-  .nav-links a { transition: color 0.16s; }
-  .nav-links a:hover { color: var(--em-hi); }
-  .nav-right { display: flex; align-items: center; gap: 10px; }
-  .live-pill {
-    font-family: var(--mono); font-size: 0.72rem; color: var(--em-hi);
-    background: rgba(16, 185, 129, 0.1); border: 1px solid var(--border-em);
-    padding: 5px 11px; border-radius: 99px; display: inline-flex; align-items: center; gap: 7px;
-  }
-  .pulse-dot {
-    width: 7px; height: 7px; border-radius: 50%; background: var(--em);
-    box-shadow: 0 0 10px var(--em); animation: zgePulse 1.8s ease-in-out infinite;
-  }
-  @keyframes zgePulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.45; transform: scale(0.82); } }
-  @media (max-width: 820px) { .nav-links, .live-pill { display: none; } }
+    /* === SECTION 1: FULL-BLEED DARK CAD HERO WITH LIVE 3D TERRAIN & BUILDINGS === */
+    .hero-band {
+      background:
+        radial-gradient(800px 460px at 78% 42%, rgba(0, 229, 255, 0.11), transparent 65%),
+        radial-gradient(640px 420px at 14% 15%, rgba(16, 185, 129, 0.12), transparent 60%),
+        var(--dark-bg);
+      color: #fff; padding: 64px 0 72px; position: relative; overflow: hidden;
+    }
+    .hero-band::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none;
+      background-image: linear-gradient(rgba(148,163,184,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.04) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    .hero-grid {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr); gap: 40px; align-items: center;
+    }
+    .hero-grid > * { min-width: 0; }
+    .hero-kicker {
+      display: inline-flex; align-items: center; gap: 8px; padding: 5px 12px; border-radius: 999px;
+      background: rgba(0, 229, 255, 0.08); border: 1px solid rgba(0, 229, 255, 0.28);
+      font-family: var(--mono); font-size: 0.72rem; color: var(--cyan); margin-bottom: 18px;
+    }
+    .hero-band h1 {
+      font-family: var(--display); font-size: clamp(2.2rem, 4.2vw, 3.35rem);
+      font-weight: 800; line-height: 1.07; letter-spacing: -0.035em; margin: 0 0 16px;
+    }
+    .hero-band h1 span { color: #34d399; }
+    .hero-lead { font-size: 1.04rem; color: #cbd5e1; max-width: 500px; margin: 0 0 26px; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 28px; }
+    .hero-stats {
+      display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
+      padding-top: 20px; border-top: 1px solid rgba(148,163,184,0.16);
+    }
+    .hstat strong { display: block; font-family: var(--display); font-size: 1.25rem; color: #fff; }
+    .hstat span { font-size: 0.78rem; color: #94a3b8; }
 
-  /* Buttons */
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-    padding: 11px 20px; border-radius: 9px; font-family: var(--display); font-weight: 700;
-    font-size: 0.9rem; letter-spacing: 0.02em; cursor: pointer; border: 1px solid transparent;
-    transition: transform 0.18s cubic-bezier(0.22,1,0.36,1), box-shadow 0.22s ease, border-color 0.2s, background 0.2s;
-  }
-  .btn:active { transform: scale(0.97); }
-  .btn-em {
-    background: linear-gradient(135deg, var(--em), #059669); color: #022c22;
-    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.28);
-  }
-  .btn-em:hover { transform: translateY(-2px); box-shadow: 0 14px 32px rgba(16, 185, 129, 0.42); }
-  .btn-ghost {
-    background: rgba(255, 255, 255, 0.03); color: var(--text); border-color: var(--border);
-  }
-  .btn-ghost:hover { border-color: var(--em); color: var(--em-hi); transform: translateY(-2px); }
-  .btn-sm { padding: 7px 13px; font-size: 0.79rem; border-radius: 7px; }
+    /* Live Interactive AutoCAD 3D Terrain Window */
+    .cad-frame {
+      background: #0b111c; border: 1px solid rgba(0, 229, 255, 0.28); border-radius: 16px;
+      overflow: hidden; box-shadow: 0 32px 76px rgba(0, 0, 0, 0.65);
+    }
+    .cad-bar {
+      display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+      padding: 10px 14px; background: #060a10; border-bottom: 1px solid var(--border-d);
+      font-family: var(--mono); font-size: 0.7rem; color: #94a3b8;
+    }
+    .lyr-row { display: flex; flex-wrap: wrap; gap: 5px; }
+    .lyr-btn {
+      display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 6px;
+      background: rgba(255,255,255,0.04); border: 1px solid rgba(148,163,184,0.2);
+      color: #94a3b8; font-family: var(--mono); font-size: 0.68rem; cursor: pointer; transition: all 0.18s ease;
+    }
+    .lyr-btn.on { color: #fff; border-color: rgba(0,229,255,0.5); background: rgba(0,229,255,0.12); }
+    .lyr-dot { width: 7px; height: 7px; border-radius: 2px; display: inline-block; }
+    .iso-wrap { position: relative; height: 375px; cursor: crosshair; background: #070c14; }
+    #geIsoCanvas { width: 100%; height: 100%; display: block; }
+    .cad-foot {
+      display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+      padding: 7px 14px; background: #05080d; border-top: 1px solid var(--border-d);
+      font-family: var(--mono); font-size: 0.68rem; color: #94a3b8;
+    }
+    .cad-foot b { color: var(--cyan); }
 
-  /* Hero */
-  .hero { padding: 62px 0 58px; }
-  .hero-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 38px; align-items: center; }
-  @media (max-width: 920px) { .hero-grid { grid-template-columns: 1fr; } }
+    /* === TRUST RIBBON (CRISP LIGHT BAR) === */
+    .trust-strip {
+      background: var(--light-bg); border-bottom: 1px solid var(--border-l); padding: 18px 0;
+    }
+    .trust-items {
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px 24px;
+      font-size: 0.84rem; font-weight: 600; color: var(--ink-muted);
+    }
+    .trust-items span { display: inline-flex; align-items: center; gap: 8px; }
+    .trust-items b { color: var(--em); font-family: var(--mono); }
 
-  .kicker-pill {
-    display: inline-flex; align-items: center; gap: 8px;
-    font-family: var(--mono); font-size: 0.74rem; color: var(--au-hi);
-    background: rgba(245, 158, 11, 0.10); border: 1px solid var(--border-au);
-    padding: 5px 12px; border-radius: 99px; margin-bottom: 16px;
-  }
-  h1 {
-    font-family: var(--display); font-size: clamp(2.35rem, 4.5vw, 3.5rem);
-    line-height: 1.04; letter-spacing: -0.02em; margin: 0 0 16px; text-wrap: balance;
-  }
-  .grad-text {
-    background: linear-gradient(95deg, #34d399 0%, #38bdf8 55%, #fbbf24 100%);
-    -webkit-background-clip: text; background-clip: text; color: transparent;
-  }
-  .hero-lead { font-size: 1.02rem; color: var(--dim); margin: 0 0 22px; max-width: 52ch; }
-  .hero-cta { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+    /* === EDITORIAL LIGHT SECTIONS (REAL COMMERCIAL SOFTWARE FEEL) === */
+    .light-sec { padding: 78px 0; background: var(--white); }
+    .alt-sec { padding: 78px 0; background: var(--light-bg); border-top: 1px solid var(--border-l); border-bottom: 1px solid var(--border-l); }
+    .sec-head { max-width: 660px; margin: 0 auto 44px; text-align: center; }
+    .sec-kicker { font-family: var(--mono); font-size: 0.74rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--em); margin-bottom: 8px; }
+    .sec-head h2 { font-family: var(--display); font-size: clamp(1.75rem, 3.2vw, 2.45rem); font-weight: 800; letter-spacing: -0.03em; line-height: 1.15; margin: 0 0 12px; color: var(--ink); }
+    .sec-head p { margin: 0; font-size: 1rem; color: var(--ink-muted); }
 
-  .compat-strip {
-    padding: 11px 14px; border-radius: 10px; font-size: 0.81rem; color: #cbd5e1;
-    background: rgba(13, 19, 32, 0.9); border: 1px solid var(--border);
-    border-left: 3px solid var(--em); max-width: 56ch;
-  }
-  .compat-strip strong { color: var(--em-hi); }
+    /* Visual CAD Feature Cards on White Surface */
+    .feat-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+    .feat-grid > * { min-width: 0; }
+    .feat-card {
+      background: var(--white); border: 1px solid var(--border-l); border-radius: 16px; overflow: hidden;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, 0.04);
+      transition: transform 0.26s var(--ease), box-shadow 0.26s ease, border-color 0.22s ease;
+    }
+    .feat-card:hover { transform: translateY(-5px); border-color: #a7f3d0; box-shadow: 0 20px 40px rgba(15, 23, 42, 0.09); }
+    .feat-svg { height: 154px; background: #0a101b; display: grid; place-items: center; padding: 12px; }
+    .feat-body { padding: 22px; }
+    .feat-body h3 { font-family: var(--display); font-size: 1.08rem; margin: 0 0 8px; color: var(--ink); }
+    .feat-body p { font-size: 0.89rem; color: var(--ink-muted); margin: 0; }
 
-  .hero-kpis {
-    display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;
-    margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--border);
-  }
-  .kpi-v { font-family: var(--display); font-size: 1.45rem; font-weight: 700; color: var(--text); line-height: 1.1; }
-  .kpi-k { font-family: var(--mono); font-size: 0.71rem; color: var(--dim); margin-top: 3px; }
+    /* Speed & ROI Showcase */
+    .roi-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 36px; align-items: center; }
+    .roi-grid > * { min-width: 0; }
+    .roi-card { background: var(--white); border: 1px solid var(--border-l); border-radius: 18px; padding: 28px; box-shadow: 0 10px 30px rgba(15,23,42,0.05); }
+    .bar-wrap { margin-bottom: 18px; }
+    .bar-lbl { display: flex; justify-content: space-between; font-size: 0.84rem; font-weight: 600; margin-bottom: 7px; }
+    .bar-track { height: 14px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+    .bar-manual { height: 100%; width: 92%; background: #94a3b8; border-radius: 999px; }
+    .bar-zge { height: 100%; width: 12%; background: linear-gradient(90deg, var(--em), #0284c7); border-radius: 999px; }
 
-  /* Interactive Tactical Blueprint Viewport (Hero Right) */
-  .viewport-shell {
-    background: var(--panel-solid); border: 1px solid rgba(16, 185, 129, 0.28);
-    border-radius: 16px; overflow: hidden;
-    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.62), 0 0 40px rgba(16, 185, 129, 0.08);
-  }
-  .vp-top {
-    display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
-    padding: 10px 14px; background: #090e18; border-bottom: 1px solid var(--border);
-    font-family: var(--mono); font-size: 0.73rem; color: var(--em-hi);
-  }
-  .vp-modes {
-    display: flex; gap: 5px; padding: 9px 12px; background: #0c121f; border-bottom: 1px solid var(--border);
-    flex-wrap: wrap;
-  }
-  .vp-mode-btn {
-    background: transparent; border: 1px solid var(--border); color: var(--dim);
-    padding: 5px 10px; border-radius: 6px; font-family: var(--mono); font-size: 0.72rem;
-    cursor: pointer; transition: all 0.15s;
-  }
-  .vp-mode-btn.active, .vp-mode-btn:hover { background: rgba(16, 185, 129, 0.16); border-color: var(--em); color: var(--em-hi); font-weight: 600; }
-  .vp-canvas-wrap { position: relative; height: 295px; background: #050912; }
-  #surveyCanvas { width: 100%; height: 100%; display: block; }
-  .vp-hud {
-    position: absolute; bottom: 10px; left: 12px; right: 12px;
-    display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;
-    background: rgba(5, 7, 12, 0.86); backdrop-filter: blur(8px);
-    border: 1px solid var(--border); border-radius: 8px; padding: 7px 11px;
-    font-family: var(--mono); font-size: 0.72rem; color: #cbd5e1;
-  }
+    /* === COMMERCIAL 3-CARD PRICING (1-YEAR STANDARD / LIFETIME PRO / MULTI-PC CUSTOM) === */
+    .price-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; align-items: stretch; }
+    .price-grid > * { min-width: 0; }
+    .p-card {
+      background: var(--white); border: 1px solid var(--border-l); border-radius: 18px; padding: 28px 24px;
+      display: flex; flex-direction: column; justify-content: space-between; gap: 20px;
+      box-shadow: 0 6px 20px rgba(15, 23, 42, 0.04);
+      transition: transform 0.25s var(--ease), box-shadow 0.25s ease;
+    }
+    .p-card:hover { transform: translateY(-4px); box-shadow: 0 22px 44px rgba(15, 23, 42, 0.09); }
+    .p-card.popular {
+      background: var(--dark-bg); color: #fff; border: 2px solid var(--em-hi);
+      box-shadow: 0 24px 54px rgba(5, 150, 105, 0.18);
+    }
+    .p-tag {
+      display: inline-block; font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
+      padding: 4px 10px; border-radius: 999px; background: #ecfdf5; color: var(--em); margin-bottom: 12px;
+    }
+    .p-card.popular .p-tag { background: rgba(16, 185, 129, 0.18); color: #34d399; }
+    .p-price { font-family: var(--display); font-size: 2.35rem; font-weight: 800; line-height: 1.05; margin: 6px 0; }
+    .p-period { font-size: 0.82rem; font-weight: 500; color: var(--ink-muted); }
+    .p-card.popular .p-period { color: #94a3b8; }
+    .p-list { list-style: none; padding: 0; margin: 16px 0 0; display: grid; gap: 9px; font-size: 0.87rem; color: var(--ink-muted); }
+    .p-card.popular .p-list { color: #cbd5e1; }
+    .p-list li::before { content: "✓ "; color: var(--em-hi); font-weight: 800; }
 
-  /* Sections */
-  section.sec { padding: 68px 0; border-top: 1px solid var(--border); }
-  section.sec.alt { background: rgba(8, 12, 21, 0.78); }
-  .sec-head { max-width: 660px; margin-bottom: 30px; }
-  .sec-head h2 {
-    font-family: var(--display); font-size: clamp(1.65rem, 3vw, 2.25rem);
-    letter-spacing: -0.015em; margin: 0 0 8px; line-height: 1.15;
-  }
-  .sec-head p { margin: 0; color: var(--dim); font-size: 0.94rem; }
+    /* === DARK CLIENT PORTAL BAND (INQUIRY + 3-STEP DELIVERY) === */
+    .portal-band { background: var(--dark-bg); color: #fff; padding: 78px 0; }
+    .portal-grid { display: grid; grid-template-columns: minmax(0, 1.38fr) minmax(0, 0.62fr); gap: 24px; align-items: start; }
+    .portal-grid > * { min-width: 0; max-width: 100%; }
+    .d-card { background: var(--dark-panel); border: 1px solid var(--border-d); border-radius: 18px; padding: 26px; min-width: 0; max-width: 100%; }
 
-  /* Scroll Reveal */
-  .reveal { opacity: 0; transform: translateY(20px); transition: opacity 0.6s cubic-bezier(0.22,1,0.36,1), transform 0.6s cubic-bezier(0.22,1,0.36,1); }
-  .reveal.in { opacity: 1; transform: translateY(0); }
+    .f-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
+    .f-grid > * { min-width: 0; }
+    .fld-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+    .fld { width: 100%; min-width: 0; background: #070b13; color: #f8fafc; border: 1px solid rgba(148,163,184,0.24); border-radius: 9px; padding: 10px 12px; font-family: var(--sans); font-size: 0.86rem; outline: none; }
+    .fld:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(0,229,255,0.16); }
+    .fld.is-ok { border-color: #34d399 !important; } .fld.is-err { border-color: #fb7185 !important; } .fld.is-warn { border-color: #f59e0b !important; }
+    .fld-hint { font-family: var(--mono); font-size: 0.69rem; color: #64748b; padding-left: 2px; min-height: 14px; }
+    .fld-hint.ok { color: #34d399; } .fld-hint.warn { color: #fbbf24; } .fld-hint.err { color: #fb7185; }
 
-  /* Tactical Spotlight Bento Grid (IP-Protected — Zero Command Names Exposed!) */
-  .bento { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
-  @media (max-width: 880px) { .bento { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 600px) { .bento { grid-template-columns: 1fr; } }
+    .zge-ready-bar { background: #070b13; border: 1px solid var(--border-d); border-radius: 10px; padding: 10px 12px; }
+    .zge-ready-top { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.7rem; color: #94a3b8; margin-bottom: 6px; }
+    .zge-ready-track { height: 5px; background: rgba(255,255,255,0.08); border-radius: 999px; overflow: hidden; margin-bottom: 7px; }
+    .zge-ready-fill { height: 100%; width: 0%; background: linear-gradient(90deg, #f59e0b, #10b981, #00e5ff); transition: width 0.25s var(--ease); }
+    .zge-ready-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .zge-rpill { font-family: var(--mono); font-size: 0.68rem; padding: 3px 8px; border-radius: 6px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; }
+    .zge-rpill.ok { background: rgba(16,185,129,0.16); border-color: rgba(52,211,153,0.5); color: #34d399; }
+    .zge-rpill.opt { background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.45); color: #fde68a; }
+    .zge-rpill.err { background: rgba(251,113,133,0.16); border-color: rgba(251,113,133,0.55); color: #fda4af; }
 
-  .spot-card {
-    position: relative; overflow: hidden;
-    background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px;
-    transition: transform 0.22s cubic-bezier(0.22,1,0.36,1), border-color 0.22s ease, box-shadow 0.22s ease;
-  }
-  .spot-card::before {
-    content: ''; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity 0.25s;
-    background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), rgba(16, 185, 129, 0.14), transparent 65%);
-  }
-  .spot-card:hover { transform: translateY(-4px); border-color: var(--border-em); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45); }
-  .spot-card:hover::before { opacity: 1; }
-  .card-tag {
-    display: inline-block; font-family: var(--mono); font-size: 0.7rem; font-weight: 600;
-    color: var(--em-hi); background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
-    padding: 3px 8px; border-radius: 6px; margin-bottom: 12px;
-  }
-  .card-tag.gold { color: var(--au-hi); background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.28); }
-  .spot-card h3 { font-family: var(--display); font-size: 1.08rem; margin: 0 0 8px; color: var(--text); }
-  .spot-card p { margin: 0; font-size: 0.85rem; color: var(--dim); line-height: 1.55; }
+    .step-item { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 16px; }
+    .step-num { width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; background: rgba(16,185,129,0.16); border: 1px solid rgba(52,211,153,0.45); color: #34d399; font-family: var(--mono); font-size: 0.74rem; font-weight: 700; display: grid; place-items: center; }
+    .step-item h4 { margin: 0 0 2px; font-size: 0.92rem; color: #fff; }
+    .step-item p { margin: 0; font-size: 0.82rem; color: #94a3b8; }
 
-  /* Interactive Time-Saved Estimator Strip */
-  .roi-box {
-    margin-top: 22px; background: linear-gradient(135deg, rgba(16,185,129,0.08), rgba(13,19,32,0.92));
-    border: 1px solid var(--border-em); border-radius: 14px; padding: 22px;
-    display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: center;
-  }
-  @media (max-width: 820px) { .roi-box { grid-template-columns: 1fr; } }
-  .roi-slider { width: 100%; accent-color: var(--em); cursor: pointer; margin-top: 10px; }
-  .roi-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .roi-pill { background: rgba(5, 7, 12, 0.75); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
-  .roi-num { font-family: var(--display); font-size: 1.65rem; font-weight: 700; color: var(--em-hi); line-height: 1.1; }
-  .roi-sub { font-family: var(--mono); font-size: 0.72rem; color: var(--dim); margin-top: 4px; }
+    .res-box { display: none; margin-top: 12px; padding: 12px 14px; border-radius: 10px; background: #060a12; border: 1px solid rgba(52,211,153,0.4); font-size: 0.83rem; color: #e2e8f0; }
+    .stage-bars { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin: 10px 0; }
+    .s-bar { height: 6px; border-radius: 4px; background: rgba(255,255,255,0.12); }
+    .s-bar.done { background: #34d399; }
 
-  /* Architecture Proof Strip */
-  .proof-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
-  @media (max-width: 860px) { .proof-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media (max-width: 520px) { .proof-grid { grid-template-columns: 1fr; } }
-  .proof-item {
-    background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
-  }
-  .proof-num { font-family: var(--display); font-size: 1.4rem; font-weight: 700; color: var(--au-hi); }
-  .proof-lbl { font-size: 0.82rem; color: var(--dim); margin-top: 4px; }
+    /* === MODAL DRAWER FOR VERIFY / TRACK / SPECS / LEGAL (ZERO PAGE CLUTTER!) === */
+    .modal-bg {
+      display: none; position: fixed; inset: 0; z-index: 9995;
+      background: rgba(4, 7, 13, 0.78); backdrop-filter: blur(8px);
+      align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-bg.open { display: flex; animation: fadeIn 0.2s ease both; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-box {
+      background: var(--dark-panel); color: #f1f5f9; border: 1px solid rgba(148,163,184,0.22);
+      border-radius: 18px; width: min(760px, 100%); max-height: 86vh; overflow-y: auto;
+      padding: 24px; box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+    }
+    #hwidBatPreview {
+      margin: 10px 0 0; max-height: 220px; overflow: auto; background: #04070d;
+      border: 1px solid var(--border-d); border-radius: 9px; padding: 11px;
+      font-family: var(--mono); font-size: 0.7rem; color: #94a3b8; line-height: 1.45;
+      white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; max-width: 100%;
+    }
 
-  /* Unified 3-Tab Client Portal */
-  .portal-grid { display: grid; grid-template-columns: 1.32fr 0.68fr; gap: 22px; align-items: start; }
-  @media (max-width: 880px) { .portal-grid { grid-template-columns: 1fr; } }
-  .panel-box { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 22px; }
-  .tab-bar { display: flex; gap: 8px; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 18px; flex-wrap: wrap; }
-  .tab-btn {
-    background: rgba(255,255,255,0.02); border: 1px solid var(--border); color: var(--dim);
-    padding: 8px 15px; border-radius: 8px; font-family: var(--display); font-weight: 700;
-    font-size: 0.84rem; cursor: pointer; transition: all 0.15s;
-  }
-  .tab-btn.active { background: var(--em); color: #022c22; border-color: var(--em); }
-  .tab-pane { display: none; }
-  .tab-pane.active { display: block; }
-  .f-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 10px; }
-  input.fld, select.fld {
-    width: 100%; background: #050810; border: 1px solid var(--border); color: var(--text);
-    padding: 10px 12px; border-radius: 8px; font-size: 0.86rem; font-family: inherit;
-    transition: border-color 0.16s, box-shadow 0.16s;
-  }
-  input.fld:focus, select.fld:focus { outline: none; border-color: var(--em); box-shadow: 0 0 0 3px rgba(16,185,129,0.16); }
-  .res-box {
-    display: none; margin-top: 14px; padding: 14px; border-radius: 10px;
-    background: #07131a; border: 1px solid var(--border-em); font-size: 0.85rem;
-  }
-  .step-row { display: flex; gap: 12px; margin-bottom: 16px; }
-  .step-n {
-    width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
-    background: rgba(16,185,129,0.12); border: 1px solid var(--border-em); color: var(--em-hi);
-    font-family: var(--mono); font-size: 0.78rem; font-weight: 700; display: grid; place-items: center;
-  }
-  .pay-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
-  .pay-tag { font-family: var(--mono); font-size: 0.72rem; padding: 4px 9px; border-radius: 6px; background: #09101d; border: 1px solid var(--border); color: #cbd5e1; }
-  .stages { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin: 12px 0; }
-  @media (max-width: 600px) { .stages { grid-template-columns: 1fr; } }
-  .st-step { padding: 7px; border-radius: 6px; font-size: 0.72rem; text-align: center; background: #0b1220; border: 1px solid var(--border); color: var(--dim); }
-  .st-step.done { background: rgba(16,185,129,0.16); border-color: var(--em); color: var(--em-hi); font-weight: 600; }
+    /* FOOTER */
+    footer { background: #05080f; color: #94a3b8; border-top: 1px solid rgba(148,163,184,0.14); padding: 34px 0; font-size: 0.82rem; }
+    .foot-row { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; }
+    .foot-links { display: flex; flex-wrap: wrap; gap: 16px; }
+    .foot-links a, .foot-links button { background: none; border: none; padding: 0; color: #cbd5e1; font-family: var(--sans); font-size: 0.82rem; cursor: pointer; text-decoration: none; }
+    .foot-links a:hover, .foot-links button:hover { color: #34d399; }
 
-  /* FAQ & Support */
-  .faq-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-bottom: 26px; }
-  details.faq { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px 16px; }
-  details.faq summary { cursor: pointer; font-weight: 600; font-size: 0.9rem; color: var(--text); }
-  details.faq p { margin: 8px 0 0; font-size: 0.84rem; color: var(--dim); }
-  .support-bar {
-    background: linear-gradient(135deg, rgba(13,19,32,0.95), rgba(16,185,129,0.08));
-    border: 1px solid var(--border-em); border-radius: 14px;
-    padding: 20px 22px; display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
-  }
-  footer { padding: 26px 0 38px; border-top: 1px solid var(--border); font-size: 0.8rem; color: var(--dim); }
-  .foot-in { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+    /* TOASTS & 24/7 BOT */
+    #zgeToastWrap { position: fixed; left: 20px; bottom: 20px; z-index: 10002; display: flex; flex-direction: column; gap: 8px; max-width: min(340px, calc(100vw - 40px)); pointer-events: none; }
+    .zge-toast { pointer-events: auto; background: #0f1726; border: 1px solid rgba(52,211,153,0.45); border-left: 3.5px solid #10b981; color: #f1f5f9; border-radius: 10px; padding: 10px 14px; font-size: 0.79rem; box-shadow: 0 16px 38px rgba(0,0,0,0.45); }
 
-  @media (prefers-reduced-motion: reduce) {
-    .reveal { opacity: 1 !important; transform: none !important; transition: none !important; }
-    .pulse-dot { animation: none !important; }
-    .spot-card:hover, .btn:hover { transform: none !important; }
-  }
+    #zgeBotToggle { position: fixed; right: 20px; bottom: 20px; z-index: 9990; background: var(--em); color: #fff; border: 1px solid rgba(255,255,255,0.22); border-radius: 999px; padding: 11px 18px; font-family: var(--sans); font-size: 0.82rem; font-weight: 700; cursor: pointer; box-shadow: 0 14px 34px rgba(5,150,105,0.42); animation: sonar 2.8s infinite; }
+    #zgeBotPanel { display: none; position: fixed; right: 20px; bottom: 76px; z-index: 9991; width: min(368px, calc(100vw - 28px)); max-height: 78vh; overflow-y: auto; background: #0f1726; border: 1px solid rgba(0,229,255,0.34); border-radius: 16px; box-shadow: 0 26px 64px rgba(0,0,0,0.68); color: #e2e8f0; }
 
-  /* Interactive PH GE Free Toolbox */
-  .tool-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
-  .tool-tab {
-    background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--dim);
-    padding: 8px 14px; border-radius: 8px; font-family: var(--mono); font-size: 0.78rem;
-    font-weight: 600; cursor: pointer; transition: all 0.15s;
-  }
-  .tool-tab.active, .tool-tab:hover { background: rgba(16,185,129,0.14); border-color: var(--em); color: var(--em-hi); }
-  .tool-pane { display: none; }
-  .tool-pane.active { display: block; }
-  .tool-out {
-    margin-top: 14px; padding: 13px 16px; border-radius: 10px;
-    background: rgba(5, 7, 12, 0.8); border: 1px solid var(--border-em);
-    font-family: var(--mono); font-size: 0.84rem; color: var(--em-hi); line-height: 1.55;
-  }
-  .story-grid { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 22px; align-items: stretch; }
-  @media (max-width: 860px) { .story-grid { grid-template-columns: 1fr; } }
-  .spec-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; margin-top: 10px; }
-  .spec-table td { padding: 8px 0; border-bottom: 1px solid var(--border); vertical-align: top; }
-  .spec-table td:first-child { font-family: var(--mono); color: var(--em-hi); width: 38%; font-size: 0.78rem; }
-  .auth-seal {
-    margin-top: 20px; padding: 16px 20px; border-radius: 12px;
-    background: linear-gradient(135deg, rgba(16,185,129,0.10), rgba(245,158,11,0.06));
-    border: 1px solid var(--border-em);
-    display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
-  }
-  .seal-mark {
-    display: inline-flex; align-items: center; gap: 10px; font-family: var(--mono); font-size: 0.78rem; color: var(--em-hi);
-  }
-  .seal-ring {
-    width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
-    border: 2px solid var(--em); background: rgba(16,185,129,0.15);
-    display: grid; place-items: center; font-weight: 800; color: var(--em-hi); font-size: 0.72rem;
-    box-shadow: 0 0 18px rgba(16,185,129,0.3);
-  }
-
-</style>
+    @media (max-width: 980px) {
+      .hero-grid, .roi-grid, .portal-grid { grid-template-columns: minmax(0, 1fr); }
+      .feat-grid, .price-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .nav-menu, .status-chip { display: none; }
+    }
+    @media (max-width: 640px) {
+      .feat-grid, .price-grid { grid-template-columns: minmax(0, 1fr); }
+      .iso-wrap { height: 300px; }
+    }
+  </style>
 </head>
 <body>
-  <div id="scrollBar" aria-hidden="true"></div>
+  <div id="scrollProg" aria-hidden="true"></div>
 
-  <header class="nav">
-    <div class="wrap nav-in">
-      <a href="#top" class="brand">
-        <span class="brand-hex">ZGE</span>
-        <span>ZGE GEODETIC SUITE</span>
+  <!-- COMMERCIAL SOFTWARE NAVBAR -->
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <span class="brand-mark">ZGE</span>
+        <span>ZGE Geodetic Suite</span>
       </a>
-      <nav class="nav-links" aria-label="Primary">
-        <a href="#capabilities">Capabilities</a>
-        <a href="#architecture">Performance</a>
-        <a href="#portal">Get License</a>
-        <a href="#support">Support</a>
-      </nav>
+      <ul class="nav-menu">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#speed">Time Saved</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><button type="button" onclick="openModal('verifyModal')">Verify &amp; Track</button></li>
+        <li><button type="button" onclick="openModal('trustModal')">Specs &amp; Legal</button></li>
+      </ul>
       <div class="nav-right">
-        <span class="live-pill"><span class="pulse-dot"></span><span id="navApiText">v7.7 PRO READY</span></span>
-        <a href="#portal" class="btn btn-em btn-sm">Request Access</a>
+        <span class="status-chip" id="liveVersionPill"><span class="pulse"></span> v7.7.0 ONLINE</span>
+        <a href="#portal" class="btn btn-primary btn-sm">Get License</a>
       </div>
     </div>
   </header>
 
-  <main id="top">
-    <!-- 1. TACTICAL KINETIC HERO -->
-    <section class="hero">
-      <div class="wrap hero-grid">
-        <div>
-          <div class="kicker-pill" id="versionBadge">PREVIEW BUILD v7.7.0 PRO &bull; PHILIPPINE GEODETIC ENGINE</div>
-          <h1>Survey Plans in Minutes.<br/><span class="grad-text">Not Hours.</span></h1>
-          <p class="hero-lead">
-            A proprietary, 100% offline-first automation engine built natively for AutoCAD and Civil 3D &mdash; engineered for BSGE students, field teams, and licensed Philippine Geodetic Engineers.
-          </p>
-          <div class="hero-cta">
-            <a href="#portal" class="btn btn-em">Request Hardware License</a>
-            <a href="#capabilities" class="btn btn-ghost">Explore Capabilities</a>
-          </div>
-          <div class="compat-strip">
-            <strong>AutoCAD Requirement:</strong> Works on any existing Windows installation of full <strong>AutoCAD or Civil 3D (2013&ndash;2026+)</strong>. Runs <strong>100% offline</strong> &mdash; compatible with both licensed and offline/firewall-blocked workstations. <em>(Autodesk installer not included.)</em>
-          </div>
-          <div class="hero-kpis">
-            <div><div class="kpi-v">100+</div><div class="kpi-k">PROPRIETARY TOOLS</div></div>
-            <div><div class="kpi-v">~0.1s</div><div class="kpi-k">BINARY LOAD TIME</div></div>
-            <div><div class="kpi-v">100%</div><div class="kpi-k">OFFLINE LOCAL DATA</div></div>
-          </div>
+  <!-- 1. FULL-BLEED DARK AUTOCAD 3D TERRAIN & BUILDINGS HERO -->
+  <section class="hero-band">
+    <div class="container hero-grid">
+      <div>
+        <div class="hero-kicker"><span class="pulse"></span> AutoCAD &amp; Civil 3D (2013&ndash;2026+) &bull; 100% Offline</div>
+        <h1>Philippine Geodetic Drafting, <span>10x Faster</span> Inside AutoCAD.</h1>
+        <p class="hero-lead">
+          Automate TCT lot plotting, subdivisions, DENR-LMB 54&times;75cm tablet-editable survey sheets, and PRS92/RTK checks &mdash; zero cloud uploads, zero OSNAP bugs, 2-minute install.
+        </p>
+        <div class="hero-actions">
+          <a href="#pricing" class="btn btn-primary">View License Options &rarr;</a>
+          <button type="button" class="btn btn-dark-ghost" onclick="openModal('verifyModal')">Track Order / Verify Key</button>
         </div>
-
-        <!-- Interactive 4-Mode Blueprint Viewport (Zero Command Names Leaked!) -->
-        <div class="viewport-shell" aria-label="Interactive Geodetic Engine Simulation">
-          <div class="vp-top">
-            <span id="vpReadout">MODE 01 // AUTOMATED TCT LOT PLOTTING</span>
-            <button type="button" id="replayBtn" class="vp-mode-btn" style="padding:3px 8px;">Replay</button>
-          </div>
-          <div class="vp-modes" id="vpModes">
-            <button type="button" class="vp-mode-btn active" data-mode="0">1. TCT Plot</button>
-            <button type="button" class="vp-mode-btn" data-mode="1">2. Subdivide</button>
-            <button type="button" class="vp-mode-btn" data-mode="2">3. Setback</button>
-            <button type="button" class="vp-mode-btn" data-mode="3">4. RTK / GIS</button>
-          </div>
-          <div class="vp-canvas-wrap">
-            <canvas id="surveyCanvas"></canvas>
-            <div class="vp-hud">
-              <span>N: <b id="hudN">1815420.145</b> m</span>
-              <span>E: <b id="hudE">458912.680</b> m</span>
-              <span id="hudTag" style="color:var(--em-hi);">PRS92 / PTM Zone 3</span>
-            </div>
-          </div>
+        <div class="hero-stats">
+          <div class="hstat"><strong>2013&ndash;2026+</strong><span>AutoCAD &amp; Civil 3D</span></div>
+          <div class="hstat"><strong>100% Local</strong><span>Zero Cloud DWG Risk</span></div>
+          <div class="hstat"><strong>Zero PINs</strong><span>Official Seal ZGE-PH-2026</span></div>
         </div>
       </div>
-    </section>
 
-    <!-- 2. IP-PROTECTED OUTCOME BENTO (ZERO COMMAND NAMES EXPOSED) -->
-    <section id="capabilities" class="sec alt reveal">
-      <div class="wrap">
-        <div class="sec-head">
-          <h2>Built for Real Philippine Surveying Output</h2>
-          <p>Every workflow is consolidated into guided dialogs and 5 dockable icon toolbars with hover guides &mdash; so you deliver accurate plans without memorizing scripts.</p>
-        </div>
-
-        <div class="bento" id="bentoGrid">
-          <div class="spot-card">
-            <span class="card-tag">CADASTRAL &amp; TCT</span>
-            <h3>Automated Lot Plotting &amp; Labeling</h3>
-            <p>Convert raw technical descriptions into closed PRS92 / Luzon 1911 / UTM boundaries with automatic bearing-distance labels, tie lines, coordinate callouts, and area tables.</p>
-          </div>
-          <div class="spot-card">
-            <span class="card-tag">SUBDIVISION ENGINE</span>
-            <h3>Exact-Area Splits &amp; Setbacks</h3>
-            <p>Execute parallel cuts, hinge splits, road right-of-way deductions, PD 1096 building footprint setbacks, and topology gap/overlap QA directly inside your DWG.</p>
-          </div>
-          <div class="spot-card">
-            <span class="card-tag gold">DENR-LMB READY</span>
-            <h3>Survey Return &amp; Title Block Automation</h3>
-            <p>Generate print-ready Lot Data Computations, Technical Descriptions, DENR transmittal &amp; GE certification sheets, and eSurvey XML exports using your saved PRC/PTR credentials.</p>
-          </div>
-          <div class="spot-card">
-            <span class="card-tag">FIELD &amp; GIS BRIDGE</span>
-            <h3>RTK, Total Station &amp; QGIS Integration</h3>
-            <p>Import PNEZD/PENZD survey CSVs, bring in QGIS GeoJSON/KML layers, run 2D Helmert best-fit checks with RMSE reporting, and export Google Earth KML or earthwork grids.</p>
-          </div>
-          <div class="spot-card">
-            <span class="card-tag gold">STUDENTS TO SENIORS</span>
-            <h3>Guided Workflows &amp; Board-Exam QA</h3>
-            <p>Includes 1-click merged pipelines for fast drafting, a 60-second in-CAD quick-start guide, and a built-in DENR AO 2007-29 traverse closure accuracy checker.</p>
-          </div>
-          <div class="spot-card">
-            <span class="card-tag">CUSTOMIZABLE UI</span>
-            <h3>Dockable Icon Toolbars &amp; Saved Prefs</h3>
-            <p>Drag and dock 5 compact toolbars anywhere on AutoCAD, toggle 16px or 32px icons with hover guides, and permanently save your preferred text height, decimals, and layer prefix.</p>
+      <!-- INTERACTIVE 3D ISOMETRIC TERRAIN + BUILDINGS + PARCELS VIEWPORT -->
+      <div class="cad-frame">
+        <div class="cad-bar">
+          <span style="color:#e2e8f0;font-weight:600;">ZGE_Cadastral_3D_PRS92.dwg</span>
+          <div class="lyr-row">
+            <button type="button" class="lyr-btn on" data-layer="terrain"><span class="lyr-dot" style="background:#10b981;"></span>Terrain</button>
+            <button type="button" class="lyr-btn on" data-layer="parcels"><span class="lyr-dot" style="background:#00e5ff;"></span>Parcels</button>
+            <button type="button" class="lyr-btn on" data-layer="buildings"><span class="lyr-dot" style="background:#f59e0b;"></span>3D Buildings</button>
+            <button type="button" class="lyr-btn on" data-layer="rtk"><span class="lyr-dot" style="background:#38bdf8;"></span>RTK</button>
           </div>
         </div>
-
-        <!-- Interactive Time-Savings Estimator -->
-        <div class="roi-box">
-          <div>
-            <div style="font-family:var(--mono);font-size:0.74rem;color:var(--au-hi);margin-bottom:4px;">ESTIMATED WORKFLOW SPEEDUP</div>
-            <h3 style="font-family:var(--display);margin:0 0 6px;font-size:1.25rem;">How many lot plans do you process per month?</h3>
-            <div style="font-size:0.84rem;color:var(--dim);">Drag the slider (<b id="lotCountLbl" style="color:var(--text);">8 lots / month</b>) to estimate drafting time saved compared to manual CAD plotting &amp; tabulation.</div>
-            <input type="range" id="roiSlider" class="roi-slider" min="1" max="30" value="8" aria-label="Lots per month" />
-          </div>
-          <div class="roi-metrics">
-            <div class="roi-pill">
-              <div class="roi-num" id="roiHours">~9.3 hrs</div>
-              <div class="roi-sub">EST. HOURS SAVED / MO</div>
-            </div>
-            <div class="roi-pill">
-              <div class="roi-num" id="roiYear" style="color:var(--au-hi);">~112 hrs</div>
-              <div class="roi-sub">EST. HOURS SAVED / YR</div>
-            </div>
-          </div>
+        <div class="iso-wrap" id="isoWrap">
+          <canvas id="geIsoCanvas" width="640" height="390"></canvas>
+        </div>
+        <div class="cad-foot">
+          <span>CURSOR: <b id="cadCursorCoord">N 1,814,220.40  E 456,812.15  Z 1,452.4m</b></span>
+          <span>OSNAP: <b>PROTECTED</b> &bull; PRS92 ZONE III</span>
         </div>
       </div>
-    </section>
-
-
-
-    <!-- 2C. ORIGIN STORY (ANONYMOUS-FIRST INSPIRATION) & HONEST SYSTEM SPECS -->
-    <section id="story" class="sec alt reveal">
-      <div class="wrap">
-        <div class="story-grid">
-          <div class="panel-box">
-            <span class="card-tag gold">WHY ZGE EXISTS</span>
-            <h2 style="font-family:var(--display);margin:0 0 10px;font-size:1.55rem;">Built from Late-Night Plotting &amp; Real Field Deadlines</h2>
-            <p style="font-size:0.89rem;color:var(--dim);margin:0 0 12px;">
-              ZGE Suite didn't start as a corporate software pitch. It began on a single Windows laptop after countless late nights manually plotting technical descriptions, double-checking traverse closures, and reformatting DENR-LMB returns line by line.
-            </p>
-            <p style="font-size:0.89rem;color:var(--dim);margin:0;">
-              Built independently in the Philippines for fellow BSGE students and licensed Geodetic Engineers, every module follows one practical standard: if a routine drafting task takes 45 repetitive clicks in AutoCAD, it should take one clean guided workflow &mdash; running 100% offline with zero monthly subscription traps.
-            </p>
-          </div>
-
-          <div class="panel-box">
-            <span class="card-tag">SYSTEM REQUIREMENTS</span>
-            <h3 style="font-family:var(--display);margin:0 0 6px;font-size:1.15rem;">Lightweight Footprint &amp; Honest Specs</h3>
-            <p style="font-size:0.82rem;color:var(--dim);margin:0 0 8px;">If your PC runs AutoCAD smoothly, it can run ZGE Suite with zero noticeable lag.</p>
-            <table class="spec-table">
-              <tr><td>OS Platform</td><td>Windows 10 / 11 (64-bit) &bull; Win 7/8.1 supported</td></tr>
-              <tr><td>CAD Host</td><td>Full AutoCAD or Civil 3D (2013&ndash;2026+)</td></tr>
-              <tr><td>RAM / Storage</td><td>&lt; 15 MB additional RAM &bull; &lt; 5 MB disk space</td></tr>
-              <tr><td>Internet</td><td>Optional (100% offline activation &amp; execution)</td></tr>
-              <tr><td>Install Rights</td><td>Standard user (zero Admin rights needed)</td></tr>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. ARCHITECTURE & TRUST STRIP -->
-    <section id="architecture" class="sec reveal">
-      <div class="wrap">
-        <div class="sec-head">
-          <h2>Engineered for Speed, Privacy &amp; Longevity</h2>
-          <p>Static HTTPS edge delivery with zero exposed database, timing-safe admin verification, and a strict Zero-Password / Zero-PIN policy &mdash; your inquiry details and DWG files stay protected.</p>
-        </div>
-        <div class="proof-grid">
-          <div class="proof-item">
-            <div class="proof-num">2013 &rarr; 2026+</div>
-            <div class="proof-lbl">Universal native AutoCAD &amp; Civil 3D compatibility with no upper version cap.</div>
-          </div>
-          <div class="proof-item">
-            <div class="proof-num">RA 10173 Safe</div>
-            <div class="proof-lbl">100% of your DWG plans, TCTs, and client records stay strictly offline on your PC.</div>
-          </div>
-          <div class="proof-item">
-            <div class="proof-num">5-Factor HWID</div>
-            <div class="proof-lbl">Protected compiled binary with hardware-bound offline activation &amp; anti-tamper guard.</div>
-          </div>
-          <div class="proof-item">
-            <div class="proof-num">1-Click Install</div>
-            <div class="proof-lbl">No admin rights required. Future suite updates preserve your existing license key.</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 4. UNIFIED 3-TAB CLIENT PORTAL -->
-    <section id="portal" class="sec alt reveal">
-      <div class="wrap">
-        <div class="sec-head">
-          <h2>Request Access or Track Your Order</h2>
-          <p>Submit an inquiry to receive your <code>INQ-XXXXXX</code> tracking code, or check your live 5-stage delivery status.</p>
-        </div>
-
-        <div class="portal-grid">
-          <div class="panel-box">
-            <div class="tab-bar" role="tablist">
-              <button type="button" class="tab-btn active" data-tab="paneInq">1. Request License</button>
-              <button type="button" class="tab-btn" data-tab="paneTrack">2. Track Order (INQ)</button>
-              <button type="button" class="tab-btn" id="tabLicBtn" data-tab="paneLic" style="display:none;">3. Verify Key</button>
-            </div>
-
-            <!-- Tab 1: Inquiry Form -->
-            <div id="paneInq" class="tab-pane active">
-              <form id="inquiryForm" style="display:grid;gap:10px;">
-                <div class="f-grid">
-                  <input type="text" id="inqName" class="fld" placeholder="Full Name (e.g. Engr. Juan Dela Cruz) *" maxlength="100" required />
-                  <input type="text" id="inqContact" class="fld" placeholder="Discord Username or Email *" maxlength="100" required />
-                </div>
-                <div class="f-grid">
-                  <select id="inqCad" class="fld">
-                    <option value="AutoCAD / Civil 3D 2024-2026+">AutoCAD / Civil 3D 2024&ndash;2026+</option>
-                    <option value="AutoCAD / Civil 3D 2020-2023">AutoCAD / Civil 3D 2020&ndash;2023</option>
-                    <option value="AutoCAD / Civil 3D 2013-2019">AutoCAD / Civil 3D 2013&ndash;2019</option>
-                  </select>
-                  <select id="inqTier" class="fld">
-                    <option value="PRO_LIFETIME">Pro Perpetual License (Lifetime)</option>
-                    <option value="STUDENT_1YR">BSGE Student License (1-Year)</option>
-                  </select>
-                  <select id="inqPay" class="fld">
-                    <option value="GCash">GCash</option>
-                    <option value="Maya">Maya</option>
-                    <option value="Bank Transfer">Bank Transfer (BPI / BDO / GoTyme)</option>
-                  </select>
-                </div>
-                <input type="text" id="inqHwid" class="fld" placeholder="Optional Machine ID (ZGE-XXXX-XXXX-XXXX) — leave blank if none yet" maxlength="24" />
-                <div style="background:rgba(5,8,16,0.85);border:1px solid var(--border);border-radius:9px;padding:11px 13px;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
-                    <div style="font-size:0.8rem;color:#cbd5e1;">
-                      <strong style="color:var(--em-hi);">Don't know your Machine ID yet?</strong> Download our 100% read-only Windows checker (no AutoCAD or internet needed):
-                    </div>
-                    <button type="button" id="dlHwidBatBtn" class="btn btn-ghost btn-sm" style="border-color:var(--border-em);color:var(--em-hi);">Download GET_ZGE_MACHINE_ID.bat</button>
-                  </div>
-                  <details style="margin-top:8px;">
-                    <summary style="cursor:pointer;font-family:var(--mono);font-size:0.74rem;color:var(--au-hi);">Inspect Full Source Code (100% Read-Only &bull; Zero Internet &bull; Zero Secrets &bull; SmartScreen: More info &rarr; Run anyway)</summary>
-                    <pre id="hwidBatPreview" style="margin:8px 0 0;max-height:210px;overflow:auto;background:#03050a;border:1px solid var(--border);border-radius:7px;padding:10px;font-family:var(--mono);font-size:0.72rem;color:#94a3b8;line-height:1.45;white-space:pre;"></pre>
-                  </details>
-                </div>
-                <input type="text" id="inqHp" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" />
-                <input type="text" id="inqNotes" class="fld" placeholder="Optional message (never paste private TCT/DWG data here)" maxlength="250" />
-                <label style="display:flex;align-items:flex-start;gap:8px;font-size:0.75rem;color:#94a3b8;margin:6px 0 8px;cursor:pointer;">
-                <input id="inqPrivacy" type="checkbox" required style="margin-top:3px;accent-color:#10b981;">
-                <span><strong>RA 10173 Privacy Consent:</strong> I consent to ZGE storing my name, contact handle, and optional hardware fingerprint solely for license fulfillment and support. No passwords, PINs, or CAD files are ever collected.</span>
-              </label>
-              <div id="turnstileMount" style="margin:8px 0;"></div>
-              <button type="submit" id="inqBtn" class="btn btn-em">Submit Inquiry &amp; Get Reference Code</button>
-              </form>
-              <div id="inqResultBox" class="res-box"></div>
-            </div>
-
-            <!-- Tab 2: Live 5-Stage Tracker -->
-            <div id="paneTrack" class="tab-pane">
-              <form id="trackForm" style="display:flex;gap:8px;flex-wrap:wrap;">
-                <input type="text" id="trackInput" class="fld" style="flex:1;min-width:200px;font-family:var(--mono);text-transform:uppercase;" placeholder="INQ-XXXXXX" maxlength="16" required />
-                <button type="submit" id="trackBtn" class="btn btn-em">Track Status</button>
-              </form>
-              <div id="trackResult" class="res-box"></div>
-            </div>
-
-            <!-- Tab 3: License Key Status -->
-            <div id="paneLic" class="tab-pane">
-              <form id="licenseForm" style="display:flex;gap:8px;flex-wrap:wrap;">
-                <input type="text" id="licenseInput" class="fld" style="flex:1;min-width:200px;font-family:var(--mono);text-transform:uppercase;" placeholder="Z6-XXXX-XXXX-XXXX-XXXX" maxlength="32" required />
-                <button type="submit" id="checkBtn" class="btn btn-em">Check License</button>
-              </form>
-              <div id="resultBox" class="res-box"></div>
-            </div>
-          </div>
-
-          <div class="panel-box">
-            <h3 style="margin:0 0 14px;font-family:var(--display);font-size:1.05rem;">3-Step Private Delivery</h3>
-            <div class="step-row">
-              <div class="step-n">01</div>
-              <div style="font-size:0.84rem;color:var(--dim);"><strong style="color:var(--text);">Submit Inquiry</strong><br/>Receive your <code>INQ-XXXXXX</code> ticket and send your Windows Machine ID.</div>
-            </div>
-            <div class="step-row">
-              <div class="step-n">02</div>
-              <div style="font-size:0.84rem;color:var(--dim);"><strong style="color:var(--text);">Direct Verification</strong><br/>Pay via PH channels; developer confirms directly before issuing your package.</div>
-            </div>
-            <div class="step-row" style="margin-bottom:0;">
-              <div class="step-n">03</div>
-              <div style="font-size:0.84rem;color:var(--dim);"><strong style="color:var(--text);">1-Click Install</strong><br/>Run the included installer, activate once offline, and start drafting immediately.</div>
-            </div>
-            <div class="pay-tags">
-              <span class="pay-tag">GCash</span>
-              <span class="pay-tag">Maya</span>
-              <span class="pay-tag">Bank Transfer</span>
-              <span class="pay-tag">Zero Auto-Charge</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- 5. FAQ & ECOSYSTEM SUPPORT -->
-    <section id="support" class="sec reveal">
-      <div class="wrap">
-        <div class="sec-head">
-          <h2>Frequently Asked Questions</h2>
-          <p>Direct, transparent answers before you request a license.</p>
-        </div>
-
-        <div class="faq-grid">
-          <details class="faq">
-            <summary>Does it work completely offline?</summary>
-            <p>Yes. Activation and all surveying tools run 100% locally inside your Windows AutoCAD or Civil 3D &mdash; no internet or cloud login required.</p>
-          </details>
-          <details class="faq">
-            <summary>Will future suite updates break my license key?</summary>
-            <p>No. Your hardware-bound key remains valid across future suite updates on the same PC, and includes a 1-time version rollback option.</p>
-          </details>
-          <details class="faq">
-            <summary>Are my DWG drawings or TCT files ever uploaded?</summary>
-            <p>Never. All computations and exports happen locally on your own workstation in full compliance with RA 10173.</p>
-          </details>
-          <details class="faq">
-            <summary>What if I reformat my PC or change laptops?</summary>
-            <p>Message the developer on Discord or Facebook with your original key and new Machine ID for a verified license transfer.</p>
-          </details>
-        </div>
-
-        <div class="support-bar">
-          <div>
-            <strong style="font-family:var(--display);font-size:1.06rem;">Direct Developer Support &amp; Remote Setup</strong>
-            <div style="font-size:0.84rem;color:var(--dim);">Maintained by Wendell Heramia (<code>@zwell04</code>) &bull; Official Ecosystem Partner: <a href="https://droidrts.pages.dev" target="_blank" rel="noopener noreferrer" style="color:var(--em-hi);text-decoration:underline;">DroidRTS</a></div>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <a href="https://discord.gg/pfGNGcZVjW" target="_blank" rel="noopener noreferrer" class="btn btn-em btn-sm">Join Discord Hub</a>
-            <a href="https://www.facebook.com/zwellge" target="_blank" rel="noopener noreferrer" class="btn btn-ghost btn-sm">Facebook / Messenger</a>
-          </div>
-        </div>
-
-        <div class="auth-seal" id="officialSeal">
-          <div class="seal-mark">
-            <div class="seal-ring">ZGE</div>
-            <div>
-              <strong style="color:var(--text);display:block;">OFFICIAL ZGE AUTHENTICITY SEAL // ZGE-PH-2026</strong>
-              <span id="originCheckText" style="color:var(--dim);font-size:0.75rem;">Verifying official portal origin...</span>
-            </div>
-          </div>
-          <div style="font-size:0.78rem;color:#cbd5e1;max-width:460px;">
-            <strong style="color:var(--au-hi);">Strict Zero-Password &amp; Zero-PIN Policy:</strong> Official licenses are issued ONLY via <code>zge-geodetic-suite-web.pages.dev</code>, Discord <code>@zwell04</code>, or <code>facebook.com/zwellge</code>. We will <strong>NEVER ask for any password, PIN, OTP, card number, or Autodesk login</strong> &mdash; ever.
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <footer>
-    <div class="wrap foot-in">
-      <span>&copy; <span id="year"></span> Wendell Heramia &bull; ZGE Complete Geodetic &amp; GIS Suite v7.7 Pro</span>
-      <span style="font-family:var(--mono);font-size:0.74rem;" id="workerPingText">API: zge-license-api.zwell.workers.dev</span>
     </div>
-  
-      <div style="margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.08);font-size:0.74rem;color:#94a3b8;line-height:1.55;">
-        <p style="margin:0 0 6px;"><strong>Trademark &amp; Non-Affiliation Notice:</strong> AutoCAD&reg; and Civil 3D&reg; are registered trademarks of Autodesk, Inc. ZGE Complete Geodetic &amp; GIS Suite is an independent third-party plugin developed in the Philippines and is <strong>not affiliated with, endorsed by, or sponsored by Autodesk, Inc. or DENR-LMB</strong>. Autodesk software installers are not provided.</p>
-        <p style="margin:0 0 6px;"><strong>Digital License, Refund &amp; PC-Transfer Policy:</strong> Because each hardware-bound activation key (<code>Z6-...</code>) and watermarked package is generated uniquely for your Machine ID, completed digital deliveries are <strong>non-refundable</strong> once activated. Verified PC reformats or hardware upgrades qualify for assisted license transfer via official support.</p>
-        <p style="margin:0;"><strong>Professional Responsibility (RA 8560):</strong> ZGE Suite assists geodetic drafting and computation; the signing Licensed Geodetic Engineer remains solely responsible for verifying all plans, bearings, areas, and technical descriptions prior to official submission.</p>
+  </section>
+
+  <!-- TRUST STRIP -->
+  <div class="trust-strip">
+    <div class="container trust-items">
+      <span><b>01</b> Works on Licensed &amp; Offline Workstations</span>
+      <span><b>02</b> DENR DAO 2007-29 &amp; DMC 2010-13 Formats</span>
+      <span><b>03</b> Desktop &amp; AutoCAD Mobile Tablet Editable</span>
+      <span><b>04</b> RA 10173 Privacy &amp; Zero-Password Policy</span>
+    </div>
+  </div>
+
+  <!-- 2. VISUAL FEATURES (CLEAN ARCHITECTURAL WHITE) -->
+  <section id="features" class="light-sec">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-kicker">Engineered for Real PH Surveying</div>
+        <h2>Everything you draft manually &mdash; automated cleanly.</h2>
+        <p>Searchable Command Hub, 5 resizable icon toolbars with hover guides, and zero-collision left-hand shortcuts so anyone adapts in minutes.</p>
       </div>
 
+      <div class="feat-grid">
+        <article class="feat-card">
+          <div class="feat-svg">
+            <svg viewBox="0 0 260 115" width="100%" height="100%" aria-hidden="true">
+              <polygon points="40,92 68,22 198,28 216,86 124,100" fill="rgba(0,229,255,0.12)" stroke="#00e5ff" stroke-width="2"/>
+              <line x1="114" y1="24" x2="108" y2="96" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 3"/>
+              <line x1="162" y1="26" x2="158" y2="92" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 3"/>
+              <circle cx="40" cy="92" r="4" fill="#34d399"/><circle cx="68" cy="22" r="4" fill="#34d399"/><circle cx="198" cy="28" r="4" fill="#34d399"/><circle cx="216" cy="86" r="4" fill="#34d399"/>
+              <text x="64" y="64" fill="#e2e8f0" font-family="JetBrains Mono,monospace" font-size="9">LOT 1-A</text>
+              <text x="118" y="64" fill="#e2e8f0" font-family="JetBrains Mono,monospace" font-size="9">LOT 1-B</text>
+              <text x="166" y="64" fill="#e2e8f0" font-family="JetBrains Mono,monospace" font-size="9">LOT 1-C</text>
+            </svg>
+          </div>
+          <div class="feat-body">
+            <h3>Click-and-Space Lot Plotting &amp; Subdivision</h3>
+            <p>Continuous bearing-distance drafting with instant readable leg labels, auto-closure, equal-area subdivision, setbacks, and area summary tables.</p>
+          </div>
+        </article>
+
+        <article class="feat-card">
+          <div class="feat-svg">
+            <svg viewBox="0 0 260 115" width="100%" height="100%" aria-hidden="true">
+              <rect x="26" y="10" width="208" height="94" fill="none" stroke="#64748b" stroke-width="1.2"/>
+              <rect x="38" y="16" width="188" height="82" fill="rgba(16,185,129,0.08)" stroke="#34d399" stroke-width="1.6"/>
+              <rect x="38" y="70" width="188" height="28" fill="rgba(0,229,255,0.1)" stroke="#00e5ff" stroke-width="1"/>
+              <line x1="98" y1="70" x2="98" y2="98" stroke="#00e5ff" stroke-width="1"/>
+              <line x1="164" y1="70" x2="164" y2="98" stroke="#00e5ff" stroke-width="1"/>
+              <polygon points="94,60 110,24 162,28 154,58" fill="rgba(245,158,11,0.18)" stroke="#f59e0b" stroke-width="1.6"/>
+              <text x="104" y="87" fill="#f8fafc" font-family="JetBrains Mono,monospace" font-size="8">DENR 54x75 MTEXT</text>
+            </svg>
+          </div>
+          <div class="feat-body">
+            <h3>DENR-LMB 54&times;75cm Tablet-Editable Sheets</h3>
+            <p>Pre-formatted Psd, Csd, Psu, Relocation &amp; A3 sheets with proper margins, auto-filled PRC/PTR credentials, and 1-tap editable text on Desktop &amp; Tablet.</p>
+          </div>
+        </article>
+
+        <article class="feat-card">
+          <div class="feat-svg">
+            <svg viewBox="0 0 260 115" width="100%" height="100%" aria-hidden="true">
+              <path d="M18,90 Q86,36 140,64 T242,28" fill="none" stroke="#10b981" stroke-width="1.7"/>
+              <path d="M18,100 Q90,54 146,76 T242,48" fill="none" stroke="#00e5ff" stroke-width="1.3" opacity="0.75"/>
+              <path d="M18,76 Q82,18 136,50 T242,14" fill="none" stroke="#34d399" stroke-width="1.2" opacity="0.55"/>
+              <circle cx="136" cy="50" r="5" fill="#f59e0b"/>
+              <circle cx="136" cy="50" r="14" fill="none" stroke="#f59e0b" stroke-width="1.2" stroke-dasharray="3 2"/>
+              <text x="155" y="54" fill="#fbbf24" font-family="JetBrains Mono,monospace" font-size="8.5">PRS92 / RTK FIX</text>
+            </svg>
+          </div>
+          <div class="feat-body">
+            <h3>PRS92, RTK, GIS &amp; Closure QA</h3>
+            <p>Philippine zone coordinate transforms, RTK monument discrepancy checks, coordinate leader callouts, and DENR AO 2007-29 closure accuracy verification.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. SPEED & ROI CALCULATOR (SOFT SLATE BAND) -->
+  <section id="speed" class="alt-sec">
+    <div class="container roi-grid">
+      <div>
+        <div class="sec-kicker">Drafting Speed Benchmark</div>
+        <h2 style="font-family:var(--display);font-size:clamp(1.65rem,2.9vw,2.2rem);font-weight:800;letter-spacing:-0.03em;margin:0 0 12px;">Reclaim hours on every single survey plan.</h2>
+        <p style="color:var(--ink-muted);margin:0 0 20px;">Instead of manually typing bearings, fixing rotated labels, building lot tables, and formatting title blocks from scratch, finish the full pipeline in one continuous flow.</p>
+        <div style="display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:6px;">
+          <span>Weekly Lots Drafted:</span>
+          <span id="lotCountLbl" style="color:var(--em);">12 lots/wk &rarr; 28.8 hrs saved/month</span>
+        </div>
+        <input id="lotSlider" type="range" min="1" max="50" value="12" style="width:100%;accent-color:var(--em);cursor:pointer;" />
+      </div>
+
+      <div class="roi-card">
+        <div class="bar-wrap">
+          <div class="bar-lbl"><span>Manual AutoCAD Drafting (Plot + Label + Table + Sheet)</span><span style="color:var(--ink-muted);">~45 mins / lot</span></div>
+          <div class="bar-track"><div class="bar-manual"></div></div>
+        </div>
+        <div class="bar-wrap" style="margin-bottom:0;">
+          <div class="bar-lbl"><span style="color:var(--em);">ZGE v7.7 Smart Pro (In-Flow Pipeline + DENR Sheet)</span><span style="color:var(--em);">~2.5 mins / lot</span></div>
+          <div class="bar-track"><div class="bar-zge"></div></div>
+        </div>
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border-l);display:flex;justify-content:space-between;font-size:0.82rem;color:var(--ink-muted);">
+          <span><strong>ESC-Safe OSNAP:</strong> Zero lost snaps</span>
+          <span><strong>1-Click Setup:</strong> PDF manual included</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. COMMERCIAL PRICING (1-YEAR STANDARD / LIFETIME PRO / MULTI-PC CUSTOM) -->
+  <section id="pricing" class="light-sec">
+    <div class="container">
+      <div class="sec-head">
+        <div class="sec-kicker">Transparent Licensing</div>
+        <h2>Simple plans that pay for themselves on your first project.</h2>
+        <p>Hardware-bound offline activation, zero cloud subscriptions, and direct developer verification.</p>
+      </div>
+
+      <div class="price-grid">
+        <div class="p-card">
+          <div>
+            <span class="p-tag">STANDARD &bull; 1 YEAR</span>
+            <h3 style="font-family:var(--display);margin:0 0 6px;font-size:1.2rem;">1-Year Standard License</h3>
+            <div class="p-price">&#8369;2,500 <span class="p-period">/ year (1 PC)</span></div>
+            <ul class="p-list">
+              <li>Full ZGE v7.7 Smart Pro suite (118+ commands)</li>
+              <li>5 draggable icon toolbars + searchable Hub</li>
+              <li>DENR 54&times;75cm &amp; A3 tablet-editable sheets</li>
+              <li>All v7.x updates included for 12 months</li>
+              <li>100% offline CAD processing after activation</li>
+            </ul>
+          </div>
+          <button type="button" class="btn btn-light-ghost" onclick="pickPlan('STANDARD_1YR')">Choose 1-Year Standard</button>
+        </div>
+
+        <div class="p-card popular">
+          <div>
+            <span class="p-tag">BEST VALUE &bull; LIFETIME</span>
+            <h3 style="font-family:var(--display);margin:0 0 6px;font-size:1.2rem;">Pro Perpetual License</h3>
+            <div class="p-price">&#8369;5,000 <span class="p-period">one-time (1 PC)</span></div>
+            <ul class="p-list">
+              <li><strong>Lifetime perpetual key</strong> &mdash; zero renewals forever</li>
+              <li>Full v7.7 Smart Pro suite + all v7.x updates</li>
+              <li>DENR 54&times;75cm &amp; A3 tablet-editable sheets</li>
+              <li>Priority Discord &amp; Facebook developer support</li>
+              <li>Verified PC transfer assistance on hardware upgrade</li>
+            </ul>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="pickPlan('PRO')">Get Pro Lifetime (&#8369;5,000) &rarr;</button>
+        </div>
+
+        <div class="p-card">
+          <div>
+            <span class="p-tag" style="background:#fef3c7;color:#b45309;">FIRMS &amp; SPECIAL CASES</span>
+            <h3 style="font-family:var(--display);margin:0 0 6px;font-size:1.2rem;">Multi-PC &amp; Custom</h3>
+            <div class="p-price" style="font-size:1.85rem;padding-top:6px;">Direct Quote</div>
+            <p class="p-period" style="margin:4px 0 0;">Verified directly by the developer</p>
+            <ul class="p-list">
+              <li>Surveying firms with 3+ CAD workstations</li>
+              <li>Verified BSGE student or unlicensed drafter inquiries</li>
+              <li>Direct 1-on-1 arrangement via Discord or Facebook</li>
+              <li>24/7 tracked Offer Ticket (<code>OFFER-XXXXXX</code>)</li>
+            </ul>
+          </div>
+          <button type="button" class="btn btn-light-ghost" onclick="document.getElementById('zgeBotToggle').click()">Discuss Custom Setup</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5. DIRECT CLIENT PORTAL (DARK CONTRAST CONVERSION BAND) -->
+  <section id="portal" class="portal-band">
+    <div class="container">
+      <div style="max-width:640px;margin-bottom:28px;">
+        <div class="sec-kicker" style="color:#34d399;">Direct Client Portal</div>
+        <h2 style="font-family:var(--display);font-size:clamp(1.6rem,2.8vw,2.2rem);font-weight:800;margin:0 0 8px;">Request Your License Package</h2>
+        <p style="color:#94a3b8;margin:0;">Submit your details to get your <code style="color:var(--cyan);font-family:var(--mono);">INQ-XXXXXX</code> tracking code. Need to check an order or inspect the Machine ID script? <button type="button" onclick="openModal('verifyModal')" style="background:none;border:none;color:#34d399;cursor:pointer;font-weight:600;padding:0;text-decoration:underline;">Open Verify &amp; Track</button>.</p>
+      </div>
+
+      <div class="portal-grid">
+        <div class="d-card">
+          <form id="inquiryForm" style="display:grid;gap:11px;">
+            <div class="zge-ready-bar" aria-live="polite">
+              <div class="zge-ready-top">
+                <span>LIVE FORM READINESS</span>
+                <strong id="readyPct" style="color:#fbbf24;">0% Complete</strong>
+              </div>
+              <div class="zge-ready-track"><div id="readyFill" class="zge-ready-fill"></div></div>
+              <div class="zge-ready-pills">
+                <span id="rpName" class="zge-rpill">1. Full Name</span>
+                <span id="rpContact" class="zge-rpill">2. Contact</span>
+                <span id="rpHwid" class="zge-rpill opt">3. Machine ID (Optional)</span>
+                <span id="rpPriv" class="zge-rpill">4. RA 10173 Consent</span>
+              </div>
+            </div>
+
+            <div class="f-grid">
+              <div class="fld-wrap">
+                <input type="text" id="inqName" class="fld" placeholder="Full Name (e.g. Engr. Juan Dela Cruz) *" maxlength="100" required />
+                <div id="hintName" class="fld-hint">Appears on your personal license receipt.</div>
+              </div>
+              <div class="fld-wrap">
+                <input type="text" id="inqContact" class="fld" placeholder="Discord @handle, FB Name, or Email *" maxlength="100" required />
+                <div id="hintContact" class="fld-hint">Email, Discord @handle, or FB profile name.</div>
+              </div>
+            </div>
+
+            <div class="f-grid">
+              <select id="inqCad" class="fld" aria-label="AutoCAD or Civil 3D Version">
+                <option value="AutoCAD / Civil 3D 2024-2026+">AutoCAD / Civil 3D 2024&ndash;2026+</option>
+                <option value="AutoCAD / Civil 3D 2020-2023">AutoCAD / Civil 3D 2020&ndash;2023</option>
+                <option value="AutoCAD / Civil 3D 2013-2019">AutoCAD / Civil 3D 2013&ndash;2019</option>
+              </select>
+              <select id="inqTier" class="fld" aria-label="License Plan">
+                <option value="PRO">Pro Perpetual &mdash; &#8369;5,000 (Lifetime, 1 PC)</option>
+                <option value="STANDARD">1-Year Standard &mdash; &#8369;2,500 / yr (1 PC)</option>
+                <option value="ENTERPRISE">Multi-PC Firm / Special Inquiry (Custom)</option>
+              </select>
+              <select id="inqPay" class="fld" aria-label="Payment Method">
+                <option value="GCash">GCash</option>
+                <option value="Maya">Maya</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+              </select>
+            </div>
+
+            <div class="fld-wrap">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <input type="text" id="inqHwid" class="fld" style="flex:1;min-width:210px;" placeholder="Optional Machine ID (ZGE-XXXX-XXXX-XXXX)" maxlength="24" />
+                <button type="button" id="dlHwidBatBtn" class="btn btn-dark-ghost btn-sm" style="color:var(--cyan);border-color:rgba(0,229,255,0.35);">Download Machine ID Finder (.bat)</button>
+              </div>
+              <div id="hintHwid" class="fld-hint">Optional for pre-order. Auto-formats ZGE-XXXX-XXXX-XXXX (hex 0&ndash;9, A&ndash;F).</div>
+            </div>
+
+            <input type="text" id="inqHp" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" />
+
+            <div class="fld-wrap">
+              <input type="text" id="inqNotes" class="fld" placeholder="Optional note (never enter passwords, PINs, OTPs, or private DWG data)" maxlength="250" />
+              <div id="hintNotes" class="fld-hint">Zero-Password Policy: We never ask for passwords, PINs, or payment screenshots here.</div>
+            </div>
+
+            <label style="display:flex;align-items:flex-start;gap:8px;font-size:0.76rem;color:#94a3b8;cursor:pointer;">
+              <input id="inqPrivacy" type="checkbox" required style="margin-top:3px;accent-color:#10b981;" />
+              <span><strong>RA 10173 Privacy Consent:</strong> I consent to ZGE storing my contact and optional Machine ID solely for license delivery and support.</span>
+            </label>
+
+            <div id="turnstileMount"></div>
+            <button type="submit" id="inqBtn" class="btn btn-primary">Submit Inquiry &amp; Get Reference Code</button>
+          </form>
+          <div id="inqResultBox" class="res-box"></div>
+        </div>
+
+        <aside class="d-card">
+          <h3 style="font-family:var(--display);margin:0 0 16px;font-size:1.06rem;">3-Step Private Delivery</h3>
+          <div class="step-item"><div class="step-num">01</div><div><h4>Submit &amp; Save Code</h4><p>Receive your <code>INQ-XXXXXX</code> tracking code immediately.</p></div></div>
+          <div class="step-item"><div class="step-num">02</div><div><h4>Direct Developer Verification</h4><p>Confirm privately via official Discord or Facebook. Zero auto-charges.</p></div></div>
+          <div class="step-item" style="margin-bottom:0;"><div class="step-num">03</div><div><h4>2-Minute Offline Install</h4><p>Extract your ZIP, run the 1-click installer, activate once offline, and start drafting.</p></div></div>
+          <div style="margin-top:18px;padding-top:16px;border-top:1px solid var(--border-d);display:flex;gap:8px;flex-wrap:wrap;">
+            <a href="https://discord.gg/pfGNGcZVjW" target="_blank" rel="noopener" class="btn btn-dark-ghost btn-sm">Discord Hub</a>
+            <a href="https://www.facebook.com/zwellge" target="_blank" rel="noopener" class="btn btn-dark-ghost btn-sm">Facebook</a>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- CLEAN COMMERCIAL FOOTER -->
+  <footer>
+    <div class="container foot-row">
+      <span>&copy; 2026 ZGE Complete Geodetic &amp; GIS Suite &bull; Official Seal: <code style="color:#34d399;font-family:var(--mono);">ZGE-PH-2026</code></span>
+      <div class="foot-links">
+        <button type="button" onclick="openModal('verifyModal')">Verify &amp; Track</button>
+        <button type="button" onclick="openModal('trustModal')">Specs, FAQ &amp; Legal</button>
+        <a href="https://discord.gg/pfGNGcZVjW" target="_blank" rel="noopener">Discord</a>
+        <a href="https://www.facebook.com/zwellge" target="_blank" rel="noopener">Facebook</a>
+        <a href="https://droidrts.pages.dev" target="_blank" rel="noopener">DroidRTS</a>
+      </div>
+    </div>
   </footer>
+
+  <!-- MODAL 1: VERIFY, TRACK & SOURCE INSPECTOR -->
+  <div id="verifyModal" class="modal-bg" role="dialog" aria-modal="true" aria-label="Verify and Track">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-family:var(--display);margin:0;font-size:1.2rem;">Verify &amp; Track Center</h3>
+        <button type="button" onclick="closeModals()" style="background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;">&times;</button>
+      </div>
+      <div style="display:grid;gap:16px;">
+        <div style="background:#080d16;border:1px solid var(--border-d);border-radius:12px;padding:16px;">
+          <div style="font-family:var(--mono);font-size:0.7rem;color:var(--cyan);font-weight:700;margin-bottom:6px;">5-STAGE ORDER TRACKER</div>
+          <form id="trackForm" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="trkRef" class="fld" style="flex:1;min-width:190px;" placeholder="INQ-A1B2C3 or OFFER-A1B2C3" maxlength="16" required />
+            <button type="submit" class="btn btn-primary btn-sm">Track</button>
+          </form>
+          <div id="trkResultBox" class="res-box"></div>
+        </div>
+
+        <div style="background:#080d16;border:1px solid var(--border-d);border-radius:12px;padding:16px;">
+          <div style="font-family:var(--mono);font-size:0.7rem;color:#fbbf24;font-weight:700;margin-bottom:6px;">OFFICIAL Z6 LICENSE VERIFIER</div>
+          <form id="verifyKeyForm" style="display:flex;gap:8px;flex-wrap:wrap;">
+            <input type="text" id="verKeyInput" class="fld" style="flex:1;min-width:190px;" placeholder="Z6-XXXX-XXXX-XXXX-XXXX" maxlength="32" required />
+            <button type="submit" class="btn btn-dark-ghost btn-sm">Verify Key</button>
+          </form>
+          <div id="verKeyBox" class="res-box"></div>
+        </div>
+
+        <div style="background:#080d16;border:1px solid var(--border-d);border-radius:12px;padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div style="font-family:var(--mono);font-size:0.72rem;color:#34d399;font-weight:700;">100% READ-ONLY GET_ZGE_MACHINE_ID.bat SOURCE CODE</div>
+            <button type="button" id="dlHwidBatBtn2" class="btn btn-primary btn-sm">Download .bat</button>
+          </div>
+          <p style="font-size:0.76rem;color:#94a3b8;margin:6px 0 0;">Zero internet calls, zero secrets. If Windows SmartScreen appears, click <strong>More info &rarr; Run anyway</strong>.</p>
+          <pre id="hwidBatPreview"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: SYSTEM SPECS, FAQ & LEGAL COMPLIANCE -->
+  <div id="trustModal" class="modal-bg" role="dialog" aria-modal="true" aria-label="Specs and Legal">
+    <div class="modal-box">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <h3 style="font-family:var(--display);margin:0;font-size:1.2rem;">System Specs, Security &amp; Legal Transparency</h3>
+        <button type="button" onclick="closeModals()" style="background:none;border:none;color:#94a3b8;font-size:1.4rem;cursor:pointer;">&times;</button>
+      </div>
+      <div style="display:grid;gap:14px;font-size:0.84rem;color:#cbd5e1;">
+        <div style="background:#080d16;border:1px solid var(--border-d);border-radius:12px;padding:15px;">
+          <strong style="color:var(--cyan);">System Requirements:</strong> Full Windows AutoCAD or Civil 3D (2013&ndash;2026+), Windows 10/11 (64-bit/32-bit), 4 GB RAM min, &lt; 5 MB disk. Compatible with licensed and offline/firewall-blocked workstations. (AutoCAD LT not supported; Autodesk installer not included.)
+        </div>
+        <div style="background:rgba(16,185,129,0.1);border:1px solid rgba(52,211,153,0.35);border-radius:12px;padding:15px;">
+          <strong style="color:#34d399;">Official Seal ZGE-PH-2026 &mdash; Zero-Password / Zero-PIN Policy:</strong> ZGE will NEVER ask for your Windows password, Autodesk login, GCash/bank PIN, OTP, or card CVV. All DWG/TCT files remain 100% offline on your PC (RA 10173 compliant).
+        </div>
+        <div style="background:#080d16;border:1px solid var(--border-d);border-radius:12px;padding:15px;font-size:0.8rem;color:#94a3b8;">
+          <p style="margin:0 0 8px;"><strong>Trademark &amp; Non-Affiliation:</strong> AutoCAD&reg; and Civil 3D&reg; are registered trademarks of Autodesk, Inc. ZGE Suite is an independent third-party plugin and is <strong>not affiliated with, endorsed by, or sponsored by Autodesk, Inc. or DENR-LMB</strong>.</p>
+          <p style="margin:0 0 8px;"><strong>Digital Delivery &amp; Refund Policy:</strong> Because each hardware-bound key (<code>Z6-...</code>) and watermarked ZIP is uniquely generated for your Machine ID, completed deliveries are <strong>non-refundable</strong> once activated. Verified PC reformats/upgrades qualify for assisted transfer.</p>
+          <p style="margin:0;"><strong>Professional Responsibility (RA 8560):</strong> The signing Licensed Geodetic Engineer remains solely responsible for verifying all survey plans, bearings, areas, and technical descriptions prior to submission.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING 24/7 ASSISTANT & OFFER BOT -->
+  <button id="zgeBotToggle" type="button" aria-label="Open 24/7 Assistant">24/7 Assistant &amp; Offer Bot</button>
+  <aside id="zgeBotPanel" aria-label="ZGE 24/7 Assistant">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 15px;background:#070c14;border-bottom:1px solid var(--border-d);border-radius:16px 16px 0 0;">
+      <div>
+        <div style="font-weight:700;font-size:0.88rem;color:#34d399;">ZGE 24/7 Buyer Assistant</div>
+        <div style="font-size:0.7rem;color:#94a3b8;">Instant answers &amp; custom offers while dev is away</div>
+      </div>
+      <button type="button" onclick="document.getElementById('zgeBotPanel').style.display='none'" style="background:transparent;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer;">&times;</button>
+    </div>
+    <div style="padding:12px 14px;">
+      <div id="botMessages" style="background:#050911;border:1px solid var(--border-d);border-radius:10px;padding:10px;font-size:0.79rem;line-height:1.45;min-height:76px;max-height:150px;overflow-y:auto;margin-bottom:9px;">
+        <div style="color:#a7f3d0;"><strong>ZGE Bot:</strong> Tap a quick question or send a custom/multi-PC offer ticket (<code>OFFER-XXXXXX</code>) below!</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:11px;">
+        <button type="button" class="lyr-btn" onclick="botReply('compat')">AutoCAD / Civil 3D?</button>
+        <button type="button" class="lyr-btn" onclick="botReply('pricing')">Pricing &amp; Multi-PC?</button>
+        <button type="button" class="lyr-btn" onclick="botReply('hwid')">Machine ID?</button>
+        <button type="button" class="lyr-btn" onclick="botReply('safe')">Safe &amp; Offline?</button>
+      </div>
+      <form id="botOfferForm" style="border-top:1px solid var(--border-d);padding-top:10px;display:flex;flex-direction:column;gap:7px;">
+        <div style="font-size:0.74rem;font-weight:700;color:#fbbf24;">Submit Custom / Multi-PC Offer Ticket</div>
+        <input id="botName" class="fld" style="padding:8px 10px;font-size:0.78rem;" type="text" placeholder="Your Name" required />
+        <input id="botContact" class="fld" style="padding:8px 10px;font-size:0.78rem;" type="text" placeholder="FB Name / Discord @handle / Email" required />
+        <div style="display:grid;grid-template-columns:1fr 74px;gap:6px;">
+          <select id="botRole" class="fld" style="padding:8px;font-size:0.78rem;">
+            <option value="Licensed / Practicing GE">Licensed / Practicing GE</option>
+            <option value="Survey Firm / Multi-PC">Survey Firm / Multi-PC</option>
+            <option value="Student / Special Inquiry">Student / Special Inquiry</option>
+          </select>
+          <input id="botSeats" class="fld" style="padding:8px;font-size:0.78rem;" type="number" min="1" max="50" value="1" title="Seats" />
+        </div>
+        <input id="botBudget" class="fld" style="padding:8px 10px;font-size:0.78rem;" type="text" placeholder="Target Budget or Bundle" />
+        <input id="botMsg" class="fld" style="padding:8px 10px;font-size:0.78rem;" type="text" placeholder="Short note (optional)" />
+        <input id="botHp" type="text" tabindex="-1" autocomplete="off" style="display:none;" />
+        <label style="display:flex;align-items:flex-start;gap:6px;font-size:0.69rem;color:#94a3b8;cursor:pointer;">
+          <input id="botPrivacy" type="checkbox" required style="margin-top:2px;accent-color:#10b981;" />
+          <span>I consent under PH RA 10173 to log my offer for developer reply only.</span>
+        </label>
+        <button id="botOfferBtn" type="submit" class="btn btn-primary btn-sm">Send Offer Ticket</button>
+        <div id="botOfferRes" class="res-box" style="margin-top:2px;font-size:0.75rem;"></div>
+      </form>
+    </div>
+  </aside>
 
   <script>
     const CONFIG = {
       WORKER_URL: "https://zge-license-api.zwell.workers.dev",
       PUBLIC_TESTING_MODE: true,
-      TURNSTILE_SITE_KEY: "" // Paste free Cloudflare Turnstile Site Key when ready
+      TURNSTILE_SITE_KEY: ""
     };
-    document.getElementById("year").textContent = new Date().getFullYear();
-    if (!CONFIG.PUBLIC_TESTING_MODE) document.getElementById("tabLicBtn").style.display = "inline-flex";
+    const HWID_BAT_SCRIPT = "@echo off\r\nsetlocal\r\ntitle ZGE Geodetic Suite v7.7 Smart Pro - Standalone Machine ID Finder (No AutoCAD Needed)\r\nset \"ZGE_HWID=\"\r\n\r\n:: Primary: PowerShell 64-bit/native (zero temp file drops; works on Windows 10 & Windows 11 24H2+)\r\nfor /f \"usebackq delims=\" %%H in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^\r\n  \"$ErrorActionPreference='SilentlyContinue';\" ^\r\n  \"function Mix16([string]$s,[int]$seed){$h=[Math]::Abs($seed)%%65521;for($i=1;$i -le $s.Length;$i++){$ch=[int][char]$s[$i-1];$h=(($h*137)+($ch*29)+($i*19)+7)%%65521};(($h*251)+($seed%%997)+13)%%65521}\" ^\r\n  \"function Hex4([int]$n){'{0:X4}' -f ([Math]::Abs($n)%%65536)}\" ^\r\n  \"function SafeReg([string]$p,[string]$n,[string]$fb){$v=(Get-ItemProperty -Path $p -Name $n -ErrorAction SilentlyContinue).$n;if([string]::IsNullOrEmpty($v)){$fb}else{[string]$v}}\" ^\r\n  \"$vol='00000000';try{$fso=New-Object -ComObject Scripting.FileSystemObject;$vol=[string]([int32]$fso.GetDrive('C:').SerialNumber)}catch{}\" ^\r\n  \"$mguid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' 'MachineGuid' 'NOGUID';\" ^\r\n  \"$cname=if($env:COMPUTERNAME){$env:COMPUTERNAME}else{'UNKNOWN'};\" ^\r\n  \"$board=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\BIOS' 'BaseBoardProduct' 'NOBRD';\" ^\r\n  \"$cpu=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0' 'ProcessorNameString' 'NOCPU';\" ^\r\n  \"$pid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion' 'ProductId' 'NOPID';\" ^\r\n  \"$raw=('ZGE7HW|'+$vol+'|'+$mguid+'|'+$cname+'|'+$board+'|'+$cpu+'|'+$pid).ToUpper();\" ^\r\n  \"'ZGE-'+$(Hex4 (Mix16 $raw 5381))+'-'+$(Hex4 (Mix16 $raw 31337))+'-'+$(Hex4 (Mix16 $raw 49157))\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n\r\n:: Fallback: VBScript (for older Windows 7/8 or locked PowerShell policies)\r\nif not defined ZGE_HWID (\r\n  set \"TMPVBS=%TEMP%\\zge_hwid_check_%RANDOM%.vbs\"\r\n  > \"%TMPVBS%\" (\r\n    echo Option Explicit\r\n    echo Function Mix16^(s, seed^)\r\n    echo   Dim h, i, ch\r\n    echo   h = Abs^(seed^) Mod 65521\r\n    echo   For i = 1 To Len^(s^)\r\n    echo     ch = Asc^(Mid^(s, i, 1^)^)\r\n    echo     h = ^(^(h * 137^) + ^(ch * 29^) + ^(i * 19^) + 7^) Mod 65521\r\n    echo   Next\r\n    echo   h = ^(^(h * 251^) + ^(seed Mod 997^) + 13^) Mod 65521\r\n    echo   Mix16 = h\r\n    echo End Function\r\n    echo Function Hex4^(n^)\r\n    echo   Dim s\r\n    echo   s = Hex^(Abs^(Int^(n^)^) Mod 65536^)\r\n    echo   Do While Len^(s^) ^< 4 : s = \"0\" ^& s : Loop\r\n    echo   Hex4 = UCase^(s^)\r\n    echo End Function\r\n    echo Function SafeReg^(wsh, path, fallback^)\r\n    echo   On Error Resume Next\r\n    echo   Dim v : v = wsh.RegRead^(path^)\r\n    echo   If Err.Number ^<^> 0 Or IsEmpty^(v^) Or Len^(CStr^(v^)^) = 0 Then\r\n    echo     Err.Clear : SafeReg = fallback\r\n    echo   Else\r\n    echo     SafeReg = CStr^(v^)\r\n    echo   End If\r\n    echo   On Error GoTo 0\r\n    echo End Function\r\n    echo Dim fso, drv, wsh, vol, mguid, cname, board, cpu, pid, raw\r\n    echo vol = \"00000000\"\r\n    echo On Error Resume Next\r\n    echo Set fso = CreateObject^(\"Scripting.FileSystemObject\"^)\r\n    echo If Not fso Is Nothing Then Set drv = fso.GetDrive^(\"C:\"^) : vol = CStr^(CLng^(drv.SerialNumber^)^)\r\n    echo Err.Clear\r\n    echo Set wsh = CreateObject^(\"WScript.Shell\"^)\r\n    echo mguid = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid\", \"NOGUID\"^)\r\n    echo cname = wsh.ExpandEnvironmentStrings^(\"%%COMPUTERNAME%%\"^)\r\n    echo If Err.Number ^<^> 0 Or cname = \"%%COMPUTERNAME%%\" Then cname = \"UNKNOWN\" : Err.Clear\r\n    echo board = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS\\BaseBoardProduct\", \"NOBRD\"^)\r\n    echo cpu   = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0\\ProcessorNameString\", \"NOCPU\"^)\r\n    echo pid   = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProductId\", \"NOPID\"^)\r\n    echo On Error GoTo 0\r\n    echo raw = UCase^(\"ZGE7HW|\" ^& vol ^& \"|\" ^& mguid ^& \"|\" ^& cname ^& \"|\" ^& board ^& \"|\" ^& cpu ^& \"|\" ^& pid^)\r\n    echo WScript.Echo \"ZGE-\" ^& Hex4^(Mix16^(raw, 5381^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 31337^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 49157^)^)\r\n  )\r\n  for /f \"usebackq delims=\" %%H in (`cscript //nologo \"%TMPVBS%\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n  del /f /q \"%TMPVBS%\" >nul 2>&1\r\n)\r\n\r\necho.\r\necho ========================================================================\r\necho   ZGE COMPLETE GEODETIC ^& GIS SUITE v7.7 SMART PRO \u2014 MACHINE ID\r\necho   (Zero AutoCAD Needed ^| Exact 5-Factor Read-Only Hardware Fingerprint)\r\necho ========================================================================\r\necho.\r\nif not defined ZGE_HWID (\r\n  echo   [ERROR] Could not read Machine ID due to Windows policy restrictions.\r\n  echo   Alternative: Open AutoCAD, install ZGE_Suite, and type ZGEACT to view\r\n  echo   your Machine ID directly inside AutoCAD.\r\n  echo ========================================================================\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\necho   YOUR MACHINE ID :  %ZGE_HWID%\r\necho.\r\necho ========================================================================\r\necho %ZGE_HWID%| clip >nul 2>&1\r\necho   [COPIED] Automatically copied to your clipboard!\r\necho   Paste this Machine ID into the ZGE Website Inquiry Form or send it\r\necho   to official ZGE Support (Discord / Facebook).\r\necho ========================================================================\r\necho.\r\npause\r\n";
 
-    // Scroll Progress + Reveal
-    const scrollBar = document.getElementById("scrollBar");
+    // === 1. MODALS, PLAN PICKER & SCROLL PROGRESS ===
+    function openModal(id) { document.getElementById(id)?.classList.add("open"); }
+    function closeModals() { document.querySelectorAll(".modal-bg").forEach(m => m.classList.remove("open")); }
+    document.querySelectorAll(".modal-bg").forEach(m => m.addEventListener("click", e => { if (e.target === m) closeModals(); }));
+    document.addEventListener("keydown", e => { if (e.key === "Escape") { closeModals(); document.getElementById("zgeBotPanel").style.display = "none"; } });
+
+    function pickPlan(val) {
+      const sel = document.getElementById("inqTier");
+      if (sel) { sel.value = val === "STANDARD_1YR" ? "STANDARD" : val; }
+      document.getElementById("portal")?.scrollIntoView({ behavior: "smooth" });
+      setTimeout(() => document.getElementById("inqName")?.focus(), 450);
+    }
+
+    const prog = document.getElementById("scrollProg");
     window.addEventListener("scroll", () => {
-      const h = document.documentElement;
-      const max = h.scrollHeight - h.clientHeight;
-      scrollBar.style.width = max > 0 ? ((window.scrollY / max) * 100).toFixed(1) + "%" : "0%";
+      const st = window.scrollY || document.documentElement.scrollTop;
+      const dh = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+      if (prog) prog.style.width = Math.min(100, (st / dh) * 100).toFixed(2) + "%";
     }, { passive: true });
 
-    const reveals = document.querySelectorAll(".reveal");
-    if ("IntersectionObserver" in window && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const io = new IntersectionObserver((entries) => {
-        entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("in"); io.unobserve(en.target); } });
-      }, { threshold: 0.08 });
-      reveals.forEach(el => io.observe(el));
-    } else {
-      reveals.forEach(el => el.classList.add("in"));
+    function zgeToast(msg) {
+      let wrap = document.getElementById("zgeToastWrap");
+      if (!wrap) { wrap = document.createElement("div"); wrap.id = "zgeToastWrap"; document.body.appendChild(wrap); }
+      const t = document.createElement("div"); t.className = "zge-toast"; t.textContent = msg; wrap.appendChild(t);
+      setTimeout(() => { t.style.opacity = "0"; t.style.transition = "opacity 0.3s"; setTimeout(() => t.remove(), 320); }, 3400);
     }
 
-    // Mouse-tracking spotlight glow on Bento cards
-    document.querySelectorAll(".spot-card").forEach(card => {
-      card.addEventListener("mousemove", (e) => {
-        const r = card.getBoundingClientRect();
-        card.style.setProperty("--mx", (e.clientX - r.left) + "px");
-        card.style.setProperty("--my", (e.clientY - r.top) + "px");
+    // === 2. LIVE WORKER STATUS ===
+    fetch(CONFIG.WORKER_URL + "/api/v1/public/status")
+      .then(r => r.json())
+      .then(d => {
+        if (d && d.latest_version) {
+          const pill = document.getElementById("liveVersionPill");
+          if (pill) pill.innerHTML = '<span class="pulse"></span> v' + String(d.latest_version).replace(/^v/i, "") + " ONLINE";
+        }
+      }).catch(() => {});
+
+    // === 3. 3D ISOMETRIC GEODETIC TERRAIN + BUILDINGS + PARCELS CAD CANVAS ===
+    (function initIsoCanvas() {
+      const canvas = document.getElementById("geIsoCanvas"), wrap = document.getElementById("isoWrap");
+      if (!canvas || !wrap) return;
+      const ctx = canvas.getContext("2d");
+      const layers = { terrain: true, parcels: true, buildings: true, rtk: true };
+      document.querySelectorAll("[data-layer]").forEach(b => b.addEventListener("click", () => {
+        const k = b.dataset.layer; layers[k] = !layers[k]; b.classList.toggle("on", layers[k]);
+      }));
+      let mouse = { x: 320, y: 195, inside: false };
+      const coordEl = document.getElementById("cadCursorCoord");
+      wrap.addEventListener("mousemove", e => {
+        const r = canvas.getBoundingClientRect();
+        mouse.x = (e.clientX - r.left) * (canvas.width / r.width);
+        mouse.y = (e.clientY - r.top) * (canvas.height / r.height);
+        mouse.inside = true;
+        const n = (1814200 + (195 - mouse.y) * 0.45).toFixed(2);
+        const ea = (456800 + (mouse.x - 320) * 0.45).toFixed(2);
+        const z = (1450 + Math.sin(mouse.x * 0.015) * 6 + Math.cos(mouse.y * 0.015) * 4).toFixed(1);
+        if (coordEl) coordEl.textContent = "N " + n + "  E " + ea + "  Z " + z + "m";
       });
-    });
+      wrap.addEventListener("mouseleave", () => { mouse.inside = false; });
 
-    // Interactive Time-Saved Estimator (~70 min saved per full lot plan + LDC + DENR return)
-    const roiSlider = document.getElementById("roiSlider");
-    function updateRoi() {
-      const lots = Number(roiSlider.value || 8);
-      const hrsMo = (lots * 70) / 60;
-      document.getElementById("lotCountLbl").textContent = `${lots} lot${lots > 1 ? "s" : ""} / month`;
-      document.getElementById("roiHours").textContent = `~${hrsMo.toFixed(1)} hrs`;
-      document.getElementById("roiYear").textContent = `~${Math.round(hrsMo * 12)} hrs`;
-    }
-    roiSlider.addEventListener("input", updateRoi);
-    updateRoi();
+      const iso = (u, v, z, cx, cy) => [cx + (u - v) * 25, cy + (u + v) * 13.5 - z];
+      const elev = (u, v, p) => Math.sin(u * 0.48 + p * 0.35) * 13 + Math.cos(v * 0.52 - p * 0.3) * 11 + Math.exp(-((u + 2) ** 2 + (v + 1.5) ** 2) * 0.14) * 32;
 
-    // Live Cloudflare Worker Status Sync
-    async function syncWorkerStatus() {
-      const pingEl = document.getElementById("workerPingText");
-      const badgeEl = document.getElementById("versionBadge");
-      const navApi = document.getElementById("navApiText");
-      try {
-        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/status");
-        const data = await res.json();
-        if (data && data.ok) {
-          badgeEl.textContent = (CONFIG.PUBLIC_TESTING_MODE ? "PREVIEW BUILD " : "RELEASE ") + "v" + data.latest_version + " PRO • PHILIPPINE GEODETIC ENGINE";
-          navApi.textContent = "v" + data.latest_version + " ONLINE";
-          pingEl.textContent = "CLOUD API: ONLINE (v" + data.latest_version + ")";
-          pingEl.style.color = "#10b981";
+      function drawBox(u0, v0, du, dv, h, cx, cy, p, col) {
+        const zb = elev(u0 + du * 0.5, v0 + dv * 0.5, p) * 0.45;
+        const b1 = iso(u0, v0, zb, cx, cy), b2 = iso(u0 + du, v0, zb, cx, cy), b3 = iso(u0 + du, v0 + dv, zb, cx, cy), b4 = iso(u0, v0 + dv, zb, cx, cy);
+        const t1 = iso(u0, v0, zb + h, cx, cy), t2 = iso(u0 + du, v0, zb + h, cx, cy), t3 = iso(u0 + du, v0 + dv, zb + h, cx, cy), t4 = iso(u0, v0 + dv, zb + h, cx, cy);
+        ctx.fillStyle = "rgba(245,158,11,0.11)"; ctx.beginPath(); ctx.moveTo(t1[0],t1[1]); ctx.lineTo(t2[0],t2[1]); ctx.lineTo(t3[0],t3[1]); ctx.lineTo(t4[0],t4[1]); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "rgba(0,229,255,0.06)"; ctx.beginPath(); ctx.moveTo(b4[0],b4[1]); ctx.lineTo(b3[0],b3[1]); ctx.lineTo(t3[0],t3[1]); ctx.lineTo(t4[0],t4[1]); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = col; ctx.lineWidth = 1.3;
+        [[b1,b2],[b2,b3],[b3,b4],[b4,b1],[t1,t2],[t2,t3],[t3,t4],[t4,t1],[b1,t1],[b2,t2],[b3,t3],[b4,t4]].forEach(s => { ctx.beginPath(); ctx.moveTo(s[0][0],s[0][1]); ctx.lineTo(s[1][0],s[1][1]); ctx.stroke(); });
+      }
+
+      let t = 0;
+      function frame() {
+        const w = canvas.width, h = canvas.height, cx = w * 0.5, cy = h * 0.57;
+        ctx.clearRect(0, 0, w, h); t += 0.012;
+        if (layers.terrain) {
+          for (let u = -6; u <= 6; u++) {
+            ctx.beginPath();
+            for (let v = -6; v <= 6; v += 0.5) { const p = iso(u, v, elev(u, v, t), cx, cy); if (v === -6) ctx.moveTo(p[0],p[1]); else ctx.lineTo(p[0],p[1]); }
+            ctx.strokeStyle = u % 2 === 0 ? "rgba(16,185,129,0.34)" : "rgba(16,185,129,0.14)"; ctx.lineWidth = u % 2 === 0 ? 1.2 : 0.8; ctx.stroke();
+          }
+          for (let v = -6; v <= 6; v++) {
+            ctx.beginPath();
+            for (let u = -6; u <= 6; u += 0.5) { const p = iso(u, v, elev(u, v, t), cx, cy); if (u === -6) ctx.moveTo(p[0],p[1]); else ctx.lineTo(p[0],p[1]); }
+            ctx.strokeStyle = v % 2 === 0 ? "rgba(0,229,255,0.22)" : "rgba(0,229,255,0.09)"; ctx.lineWidth = 0.9; ctx.stroke();
+          }
         }
-      } catch (_) {
-        pingEl.textContent = "CLOUD API: STANDBY";
-      }
-    }
-    syncWorkerStatus();
-
-    // Portal Tab Switcher
-    document.querySelectorAll(".tab-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-        document.querySelectorAll(".tab-pane").forEach(p => p.classList.remove("active"));
-        btn.classList.add("active");
-        document.getElementById(btn.dataset.tab).classList.add("active");
-      });
-    });
-
-    // Inquiry Form -> Cloudflare /api/v1/public/inquiry
-
-    // Plug-and-play Cloudflare Turnstile loader (activates automatically when CONFIG.TURNSTILE_SITE_KEY is set)
-    if (CONFIG.TURNSTILE_SITE_KEY && document.getElementById("turnstileMount")) {
-      const wDiv = document.createElement("div");
-      wDiv.className = "cf-turnstile";
-      wDiv.setAttribute("data-sitekey", CONFIG.TURNSTILE_SITE_KEY);
-      wDiv.setAttribute("data-theme", "dark");
-      document.getElementById("turnstileMount").appendChild(wDiv);
-      const tsSc = document.createElement("script");
-      tsSc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js";
-      tsSc.async = true;
-      tsSc.defer = true;
-      document.head.appendChild(tsSc);
-    }
-    const inqForm = document.getElementById("inquiryForm");
-    const inqRes = document.getElementById("inqResultBox");
-    inqForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById("inqBtn");
-      btn.disabled = true; btn.textContent = "Submitting...";
-      inqRes.style.display = "block"; inqRes.textContent = "Registering inquiry...";
-      try {
-        const tsInput = document.querySelector('input[name="cf-turnstile-response"]');
-        const payload = {
-          client_name: document.getElementById("inqName").value.trim(),
-          contact_info: document.getElementById("inqContact").value.trim(),
-          cad_version: document.getElementById("inqCad").value,
-          plan_tier: document.getElementById("inqTier").value,
-          payment_method: document.getElementById("inqPay").value,
-          hwid_submitted: document.getElementById("inqHwid").value.trim().toUpperCase(),
-          notes: document.getElementById("inqNotes").value.trim(),
-          website_hp: document.getElementById("inqHp").value,
-          cf_turnstile_token: tsInput ? tsInput.value : ""
-        };
-        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/inquiry", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload)
-        });
-        const data = await res.json();
-        if (res.ok && data.ok) {
-          inqRes.innerHTML = `<strong style="color:#34d399;">Inquiry Received!</strong> Reference Code: <code style="font-size:1rem;">${data.ref_code}</code><br/><span style="color:#94a3b8;">Track live progress anytime in Tab 2, or message @zwell04 on Discord / Facebook.</span>`;
-          inqForm.reset();
-        } else {
-          inqRes.innerHTML = `<strong style="color:#f43f5e;">${data.error || "Unable to submit inquiry."}</strong>`;
-        }
-      } catch (_) {
-        inqRes.innerHTML = `<strong style="color:#f43f5e;">Network error. Please retry or contact @zwell04 on Discord.</strong>`;
-      } finally {
-        btn.disabled = false; btn.textContent = "Submit Inquiry & Get Reference Code";
-      }
-    });
-
-    // 5-Stage Progress Tracker
-    const trackRes = document.getElementById("trackResult");
-    const STAGE_MAP = { RECEIVED: 1, PAYMENT_REVIEW: 2, KEY_ISSUED: 3, READY_FOR_DELIVERY: 4, COMPLETED: 5, ARCHIVED_LICENSE_ACTIVE: 5 };
-    document.getElementById("trackForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const ref = document.getElementById("trackInput").value.trim().toUpperCase();
-      trackRes.style.display = "block"; trackRes.textContent = "Checking live status...";
-      try {
-        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/track-inquiry?ref=" + encodeURIComponent(ref));
-        const d = await res.json();
-        if (!res.ok || !d.ok) { trackRes.innerHTML = `<strong style="color:#f43f5e;">${d.error || "Reference code not found."}</strong>`; return; }
-        const stg = STAGE_MAP[d.status] || 1;
-        const bars = ["1. Received", "2. Payment", "3. Key Ready", "4. Delivery", "5. Active"].map((l, i) => `<div class="st-step ${i + 1 <= stg ? "done" : ""}">${l}</div>`).join("");
-        trackRes.innerHTML = `<strong>${d.ref_code}</strong> &mdash; <span style="color:#34d399;">${d.status}</span><div class="stages">${bars}</div><div style="color:#94a3b8;font-size:0.82rem;">${d.status_note || "Your request is being processed."}</div>`;
-      } catch (_) {
-        trackRes.innerHTML = `<strong style="color:#f43f5e;">Unable to reach tracking server.</strong>`;
-      }
-    });
-
-    // License Verifier
-    document.getElementById("licenseForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const box = document.getElementById("resultBox");
-      const key = document.getElementById("licenseInput").value.trim().toUpperCase();
-      box.style.display = "block"; box.textContent = "Verifying...";
-      try {
-        const res = await fetch(CONFIG.WORKER_URL + "/api/v1/public/check-license", {
-          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ license_key: key })
-        });
-        const d = await res.json();
-        box.innerHTML = res.ok && d.ok
-          ? `<strong style="color:#34d399;">${d.status}</strong> &mdash; ${d.client_name || "Licensed User"} (Watermark: <code>${d.watermark || "N/A"}</code>)`
-          : `<strong style="color:#f43f5e;">${d.error || "License not found."}</strong>`;
-      } catch (_) {
-        box.innerHTML = `<strong style="color:#f43f5e;">Verification server unreachable.</strong>`;
-      }
-    });
-
-    // Interactive 4-Mode Tactical Blueprint Canvas (Zero Command Names Leaked!)
-    const canvas = document.getElementById("surveyCanvas");
-    const ctx = canvas.getContext("2d");
-    const MODES = [
-      { title: "MODE 01 // AUTOMATED TCT LOT PLOTTING", tag: "Area: 500.00 sq.m. | Closed" },
-      { title: "MODE 02 // EXACT-AREA SUBDIVISION SPLIT", tag: "Lot 1A: 250.00 | Lot 1B: 250.00" },
-      { title: "MODE 03 // PD 1096 BUILDING SETBACK", tag: "Buildable Footprint: 68.4%" },
-      { title: "MODE 04 // RTK SURVEY & GIS OVERLAY", tag: "RMSE: 0.012 m | PRS92 Zone 3" }
-    ];
-    const lotPts = [
-      { x: 0.14, y: 0.78, lbl: "BLLM-1", n: 1815390.120, e: 458870.440 },
-      { x: 0.30, y: 0.66, lbl: "1", n: 1815420.145, e: 458912.680 },
-      { x: 0.72, y: 0.72, lbl: "2", n: 1815405.810, e: 458960.120 },
-      { x: 0.82, y: 0.24, lbl: "3", n: 1815462.340, e: 458978.510 },
-      { x: 0.38, y: 0.18, lbl: "4", n: 1815474.900, e: 458925.190 },
-      { x: 0.30, y: 0.66, lbl: "1", n: 1815420.145, e: 458912.680 }
-    ];
-    let curMode = 0, animT = 0, animId = null;
-
-    function drawFrame() {
-      const dpr = window.devicePixelRatio || 1;
-      const w = canvas.clientWidth, h = canvas.clientHeight;
-      if (canvas.width !== w * dpr || canvas.height !== h * dpr) { canvas.width = w * dpr; canvas.height = h * dpr; }
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.clearRect(0, 0, w, h);
-
-      // Precision blueprint grid
-      ctx.strokeStyle = "rgba(16,185,129,0.08)"; ctx.lineWidth = 1;
-      for (let x = 0; x < w; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-      for (let y = 0; y < h; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-
-      const segs = lotPts.length - 1;
-      const cur = Math.min(animT, segs);
-
-      // Filled lot polygon once closed
-      if (cur >= segs) {
-        ctx.fillStyle = "rgba(16,185,129,0.11)";
-        ctx.beginPath();
-        for (let i = 1; i < lotPts.length; i++) {
-          const px = lotPts[i].x * w, py = lotPts[i].y * h;
-          if (i === 1) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        }
-        ctx.closePath(); ctx.fill();
-
-        // Mode-specific tactical overlays
-        if (curMode === 1) {
-          // Exact subdivision split line
-          ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
-          ctx.beginPath(); ctx.moveTo(0.51 * w, 0.69 * h); ctx.lineTo(0.60 * w, 0.21 * h); ctx.stroke();
-          ctx.setLineDash([]);
-          ctx.font = "700 11px 'JetBrains Mono', monospace"; ctx.fillStyle = "#fbbf24";
-          ctx.fillText("LOT 1-A", 0.38 * w, 0.48 * h);
-          ctx.fillText("LOT 1-B", 0.62 * w, 0.48 * h);
-        } else if (curMode === 2) {
-          // Inner PD 1096 building footprint setback
-          ctx.strokeStyle = "#38bdf8"; ctx.lineWidth = 1.8; ctx.setLineDash([4, 4]);
-          ctx.fillStyle = "rgba(56,189,248,0.14)";
-          ctx.beginPath();
-          ctx.moveTo(0.37 * w, 0.59 * h); ctx.lineTo(0.66 * w, 0.64 * h);
-          ctx.lineTo(0.74 * w, 0.30 * h); ctx.lineTo(0.43 * w, 0.26 * h);
-          ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.setLineDash([]);
-          ctx.font = "700 11px 'JetBrains Mono', monospace"; ctx.fillStyle = "#38bdf8";
-          ctx.fillText("BUILDABLE FOOTPRINT", 0.44 * w, 0.46 * h);
-        } else if (curMode === 3) {
-          // RTK GPS shot nodes + RMSE vectors
-          const shots = [[0.30,0.66],[0.72,0.72],[0.82,0.24],[0.38,0.18],[0.55,0.45],[0.46,0.34],[0.64,0.52]];
-          shots.forEach(([sx, sy], k) => {
-            ctx.strokeStyle = "#f59e0b"; ctx.lineWidth = 1.4;
-            ctx.beginPath(); ctx.arc(sx * w, sy * h, 8, 0, Math.PI * 2); ctx.stroke();
-            ctx.fillStyle = "#fbbf24"; ctx.font = "600 10px 'JetBrains Mono', monospace";
-            ctx.fillText("RTK-" + (k + 1), sx * w + 10, sy * h + 3);
+        if (layers.parcels) {
+          [[[-1.8,-1.8],[1.4,-1.8],[1.4,1.2],[-1.8,1.2]], [[1.4,-1.8],[4.4,-1.8],[4.4,1.2],[1.4,1.2]], [[-1.8,1.2],[1.4,1.2],[1.4,4.2],[-1.8,4.2]], [[1.4,1.2],[4.4,1.2],[4.4,4.2],[1.4,4.2]]].forEach((poly, idx) => {
+            ctx.beginPath();
+            poly.forEach((pt, i) => { const p = iso(pt[0], pt[1], elev(pt[0], pt[1], t) * 0.45, cx, cy); if (i === 0) ctx.moveTo(p[0],p[1]); else ctx.lineTo(p[0],p[1]); });
+            ctx.closePath(); ctx.fillStyle = "rgba(0,229,255,0.07)"; ctx.fill(); ctx.strokeStyle = "#00e5ff"; ctx.lineWidth = 1.7; ctx.stroke();
+            const cu = (poly[0][0] + poly[2][0]) * 0.5, cv = (poly[0][1] + poly[2][1]) * 0.5, cp = iso(cu, cv, elev(cu, cv, t) * 0.45, cx, cy);
+            ctx.fillStyle = "#e2e8f0"; ctx.font = "600 9.5px JetBrains Mono, monospace"; ctx.fillText("LOT " + (idx + 1), cp[0] - 15, cp[1] + 4);
           });
         }
-      }
-
-      // Draw tie line + lot courses progressively
-      for (let i = 0; i < Math.floor(cur) + 1 && i < segs; i++) {
-        const frac = Math.min(1, cur - i);
-        const a = lotPts[i], b = lotPts[i + 1];
-        const x1 = a.x * w, y1 = a.y * h;
-        const x2 = (a.x + (b.x - a.x) * frac) * w, y2 = (a.y + (b.y - a.y) * frac) * h;
-        ctx.strokeStyle = i === 0 ? "#f59e0b" : "#10b981";
-        ctx.setLineDash(i === 0 ? [5, 5] : []);
-        ctx.lineWidth = 2.4;
-        ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
-        ctx.setLineDash([]);
-        if (frac < 1 || i === segs - 1) {
-          document.getElementById("hudN").textContent = (a.n + (b.n - a.n) * frac).toFixed(3);
-          document.getElementById("hudE").textContent = (a.e + (b.e - a.e) * frac).toFixed(3);
+        if (layers.buildings) {
+          const r = 0.88 + Math.sin(t * 1.1) * 0.07;
+          drawBox(-1.1,-1.1,1.6,1.4,36*r,cx,cy,t,"#f59e0b");
+          drawBox(2.0,-1.0,1.5,1.5,56*r,cx,cy,t,"#fbbf24");
+          drawBox(-1.0,2.0,1.7,1.3,26*r,cx,cy,t,"#f59e0b");
+          drawBox(2.1,2.1,1.4,1.4,44*r,cx,cy,t,"#00e5ff");
         }
-      }
-
-      // Vertices
-      lotPts.slice(0, -1).forEach((p, idx) => {
-        if (cur >= idx) {
-          const px = p.x * w, py = p.y * h;
-          ctx.fillStyle = idx === 0 ? "#f59e0b" : "#34d399";
-          ctx.beginPath(); ctx.arc(px, py, 4.2, 0, Math.PI * 2); ctx.fill();
-          ctx.font = "700 11px 'JetBrains Mono', monospace"; ctx.fillStyle = "#e2e8f0";
-          ctx.fillText(p.lbl, px + 8, py - 6);
+        if (layers.rtk) {
+          [[-1.8,-1.8,"PS-1"], [4.4,-1.8,"PS-2"], [4.4,4.2,"BLLM-1"], [-1.8,4.2,"PS-4"]].forEach((m, i) => {
+            const p = iso(m[0], m[1], elev(m[0], m[1], t) * 0.45, cx, cy);
+            const rad = 5 + ((t * 18 + i * 7) % 15);
+            ctx.beginPath(); ctx.arc(p[0], p[1], rad, 0, Math.PI * 2); ctx.strokeStyle = "rgba(56,189,248," + (1 - rad / 22).toFixed(2) + ")"; ctx.lineWidth = 1.2; ctx.stroke();
+            ctx.beginPath(); ctx.arc(p[0], p[1], 3.5, 0, Math.PI * 2); ctx.fillStyle = "#34d399"; ctx.fill();
+            ctx.fillStyle = "#34d399"; ctx.font = "700 9px JetBrains Mono, monospace"; ctx.fillText(m[2], p[0] + 6, p[1] - 4);
+          });
         }
-      });
-
-      if (animT < segs) { animT += 0.04; animId = requestAnimationFrame(drawFrame); }
-    }
-
-    function runMode(m) {
-      curMode = m;
-      document.getElementById("vpReadout").textContent = MODES[m].title;
-      document.getElementById("hudTag").textContent = MODES[m].tag;
-      if (animId) cancelAnimationFrame(animId);
-      animT = 0; drawFrame();
-    }
-    document.getElementById("vpModes").addEventListener("click", (e) => {
-      const b = e.target.closest(".vp-mode-btn");
-      if (!b) return;
-      document.querySelectorAll("#vpModes .vp-mode-btn").forEach(x => x.classList.remove("active"));
-      b.classList.add("active");
-      runMode(Number(b.dataset.mode));
-    });
-    document.getElementById("replayBtn").onclick = () => runMode(curMode);
-    runMode(0);
-
-
-
-    // Official Authenticity Origin Check
-    (function checkOrigin() {
-      const host = (window.location.hostname || "").toLowerCase();
-      const el = document.getElementById("originCheckText");
-      if (!el) return;
-      if (host === "zge-geodetic-suite-web.pages.dev") {
-        el.innerHTML = '<span style="color:#34d399;font-weight:700;">VERIFIED OFFICIAL DOMAIN:</span> zge-geodetic-suite-web.pages.dev (HTTPS Protected)';
-      } else {
-        el.innerHTML = 'Preview Mode &bull; Official live portal: <strong style="color:#34d399;">zge-geodetic-suite-web.pages.dev</strong>';
+        if (mouse.inside) {
+          ctx.strokeStyle = "rgba(0,229,255,0.4)"; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(mouse.x, 0); ctx.lineTo(mouse.x, h); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(0, mouse.y); ctx.lineTo(w, mouse.y); ctx.stroke();
+          ctx.strokeRect(mouse.x - 5, mouse.y - 5, 10, 10);
+        }
+        requestAnimationFrame(frame);
       }
+      requestAnimationFrame(frame);
     })();
 
-  
-    // === 100% Read-Only GET_ZGE_MACHINE_ID.bat Viewer & 1-Click Local Blob Download ===
-    const HWID_BAT_SOURCE = "@echo off\r\nsetlocal\r\ntitle ZGE Geodetic Suite v7.7 Smart Pro - Standalone Machine ID Finder (No AutoCAD Needed)\r\nset \"ZGE_HWID=\"\r\n\r\n:: Primary: PowerShell 64-bit/native (zero temp file drops; works on Windows 10 & Windows 11 24H2+)\r\nfor /f \"usebackq delims=\" %%H in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^\r\n  \"$ErrorActionPreference='SilentlyContinue';\" ^\r\n  \"function Mix16([string]$s,[int]$seed){$h=[Math]::Abs($seed)%%65521;for($i=1;$i -le $s.Length;$i++){$ch=[int][char]$s[$i-1];$h=(($h*137)+($ch*29)+($i*19)+7)%%65521};(($h*251)+($seed%%997)+13)%%65521}\" ^\r\n  \"function Hex4([int]$n){'{0:X4}' -f ([Math]::Abs($n)%%65536)}\" ^\r\n  \"function SafeReg([string]$p,[string]$n,[string]$fb){$v=(Get-ItemProperty -Path $p -Name $n -ErrorAction SilentlyContinue).$n;if([string]::IsNullOrEmpty($v)){$fb}else{[string]$v}}\" ^\r\n  \"$vol='00000000';try{$fso=New-Object -ComObject Scripting.FileSystemObject;$vol=[string]([int32]$fso.GetDrive('C:').SerialNumber)}catch{}\" ^\r\n  \"$mguid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' 'MachineGuid' 'NOGUID';\" ^\r\n  \"$cname=if($env:COMPUTERNAME){$env:COMPUTERNAME}else{'UNKNOWN'};\" ^\r\n  \"$board=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\BIOS' 'BaseBoardProduct' 'NOBRD';\" ^\r\n  \"$cpu=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0' 'ProcessorNameString' 'NOCPU';\" ^\r\n  \"$pid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion' 'ProductId' 'NOPID';\" ^\r\n  \"$raw=('ZGE7HW|'+$vol+'|'+$mguid+'|'+$cname+'|'+$board+'|'+$cpu+'|'+$pid).ToUpper();\" ^\r\n  \"'ZGE-'+$(Hex4 (Mix16 $raw 5381))+'-'+$(Hex4 (Mix16 $raw 31337))+'-'+$(Hex4 (Mix16 $raw 49157))\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n\r\n:: Fallback: VBScript (for older Windows 7/8 or locked PowerShell policies)\r\nif not defined ZGE_HWID (\r\n  set \"TMPVBS=%TEMP%\\zge_hwid_check_%RANDOM%.vbs\"\r\n  > \"%TMPVBS%\" (\r\n    echo Option Explicit\r\n    echo Function Mix16^(s, seed^)\r\n    echo   Dim h, i, ch\r\n    echo   h = Abs^(seed^) Mod 65521\r\n    echo   For i = 1 To Len^(s^)\r\n    echo     ch = Asc^(Mid^(s, i, 1^)^)\r\n    echo     h = ^(^(h * 137^) + ^(ch * 29^) + ^(i * 19^) + 7^) Mod 65521\r\n    echo   Next\r\n    echo   h = ^(^(h * 251^) + ^(seed Mod 997^) + 13^) Mod 65521\r\n    echo   Mix16 = h\r\n    echo End Function\r\n    echo Function Hex4^(n^)\r\n    echo   Dim s\r\n    echo   s = Hex^(Abs^(Int^(n^)^) Mod 65536^)\r\n    echo   Do While Len^(s^) ^< 4 : s = \"0\" ^& s : Loop\r\n    echo   Hex4 = UCase^(s^)\r\n    echo End Function\r\n    echo Function SafeReg^(wsh, path, fallback^)\r\n    echo   On Error Resume Next\r\n    echo   Dim v : v = wsh.RegRead^(path^)\r\n    echo   If Err.Number ^<^> 0 Or IsEmpty^(v^) Or Len^(CStr^(v^)^) = 0 Then\r\n    echo     Err.Clear : SafeReg = fallback\r\n    echo   Else\r\n    echo     SafeReg = CStr^(v^)\r\n    echo   End If\r\n    echo   On Error GoTo 0\r\n    echo End Function\r\n    echo Dim fso, drv, wsh, vol, mguid, cname, board, cpu, pid, raw\r\n    echo vol = \"00000000\"\r\n    echo On Error Resume Next\r\n    echo Set fso = CreateObject^(\"Scripting.FileSystemObject\"^)\r\n    echo If Not fso Is Nothing Then Set drv = fso.GetDrive^(\"C:\"^) : vol = CStr^(CLng^(drv.SerialNumber^)^)\r\n    echo Err.Clear\r\n    echo Set wsh = CreateObject^(\"WScript.Shell\"^)\r\n    echo mguid = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid\", \"NOGUID\"^)\r\n    echo cname = wsh.ExpandEnvironmentStrings^(\"%%COMPUTERNAME%%\"^)\r\n    echo If Err.Number ^<^> 0 Or cname = \"%%COMPUTERNAME%%\" Then cname = \"UNKNOWN\" : Err.Clear\r\n    echo board = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS\\BaseBoardProduct\", \"NOBRD\"^)\r\n    echo cpu   = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0\\ProcessorNameString\", \"NOCPU\"^)\r\n    echo pid   = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProductId\", \"NOPID\"^)\r\n    echo On Error GoTo 0\r\n    echo raw = UCase^(\"ZGE7HW|\" ^& vol ^& \"|\" ^& mguid ^& \"|\" ^& cname ^& \"|\" ^& board ^& \"|\" ^& cpu ^& \"|\" ^& pid^)\r\n    echo WScript.Echo \"ZGE-\" ^& Hex4^(Mix16^(raw, 5381^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 31337^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 49157^)^)\r\n  )\r\n  for /f \"usebackq delims=\" %%H in (`cscript //nologo \"%TMPVBS%\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n  del /f /q \"%TMPVBS%\" >nul 2>&1\r\n)\r\n\r\necho.\r\necho ========================================================================\r\necho   ZGE COMPLETE GEODETIC ^& GIS SUITE v7.7 SMART PRO \u2014 MACHINE ID\r\necho   (Zero AutoCAD Needed ^| Exact 5-Factor Read-Only Hardware Fingerprint)\r\necho ========================================================================\r\necho.\r\nif not defined ZGE_HWID (\r\n  echo   [ERROR] Could not read Machine ID due to Windows policy restrictions.\r\n  echo   Alternative: Open AutoCAD, install ZGE_Suite, and type ZGEACT to view\r\n  echo   your Machine ID directly inside AutoCAD.\r\n  echo ========================================================================\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\necho   YOUR MACHINE ID :  %ZGE_HWID%\r\necho.\r\necho ========================================================================\r\necho %ZGE_HWID%| clip >nul 2>&1\r\necho   [COPIED] Automatically copied to your clipboard!\r\necho   Paste this Machine ID into the ZGE Website Inquiry Form or send it\r\necho   to official ZGE Support (Discord / Facebook).\r\necho ========================================================================\r\necho.\r\npause\r\n";
-    const batPreviewEl = document.getElementById("hwidBatPreview");
-    if (batPreviewEl) batPreviewEl.textContent = HWID_BAT_SOURCE;
-    const dlBatBtn = document.getElementById("dlHwidBatBtn");
-    if (dlBatBtn) {
-      dlBatBtn.addEventListener("click", () => {
-        const blob = new Blob([HWID_BAT_SOURCE], { type: "application/octet-stream" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "GET_ZGE_MACHINE_ID.bat";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(url), 1000);
-      });
+    // === 4. SLIDER + BAT DOWNLOAD ===
+    const lotSlider = document.getElementById("lotSlider");
+    if (lotSlider) {
+      const upd = () => { const n = Number(lotSlider.value) || 1; document.getElementById("lotCountLbl").innerHTML = n + " lots/wk &rarr; " + (n * 2.4).toFixed(1) + " hrs saved/month"; };
+      lotSlider.addEventListener("input", upd); upd();
     }
 
-  
-    // 24/7 Pre-Sales & Negotiation Assistant Logic
-    (function initZgeBot() {
-      const tgl = document.getElementById("zgeBotToggle");
-      const pnl = document.getElementById("zgeBotPanel");
-      if (!tgl || !pnl) return;
-      tgl.addEventListener("click", () => {
-        pnl.style.display = pnl.style.display === "block" ? "none" : "block";
+    document.getElementById("hwidBatPreview").textContent = HWID_BAT_SCRIPT;
+    function downloadBat() {
+      const blob = new Blob([HWID_BAT_SCRIPT], { type: "application/x-bat;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a"); a.href = url; a.download = "GET_ZGE_MACHINE_ID.bat";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      zgeToast("Downloaded GET_ZGE_MACHINE_ID.bat — double-click it on your AutoCAD PC.");
+    }
+    document.getElementById("dlHwidBatBtn").addEventListener("click", downloadBat);
+    document.getElementById("dlHwidBatBtn2").addEventListener("click", downloadBat);
+
+    // === 5. SMART LIVE FORM VALIDATION ===
+    (function initForm() {
+      const nameEl = document.getElementById("inqName"), contactEl = document.getElementById("inqContact"),
+            hwidEl = document.getElementById("inqHwid"), notesEl = document.getElementById("inqNotes"),
+            privEl = document.getElementById("inqPrivacy");
+      const HWID_RE = /^ZGE-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/;
+      function setState(el, hid, st, msg) {
+        const h = document.getElementById(hid);
+        el.classList.remove("is-ok","is-err","is-warn"); h.classList.remove("ok","err","warn");
+        if (st) { el.classList.add("is-" + st); h.classList.add(st); }
+        h.textContent = msg;
+      }
+      function updateReady() {
+        let sc = 0;
+        const nv = nameEl.value.trim(), cv = contactEl.value.trim(), hv = hwidEl.value.trim().toUpperCase(), pv = privEl.checked;
+        const setP = (id, cls, txt) => { const e = document.getElementById(id); e.className = "zge-rpill " + cls; e.textContent = txt; };
+        if (nv.length >= 3) { sc += 34; setP("rpName", "ok", "✓ 1. Full Name"); } else setP("rpName", "", "1. Full Name");
+        if (cv.length >= 3) { sc += 33; setP("rpContact", "ok", "✓ 2. Contact"); } else setP("rpContact", "", "2. Contact");
+        if (!hv) setP("rpHwid", "opt", "3. Machine ID (Optional)");
+        else if (HWID_RE.test(hv)) setP("rpHwid", "ok", "✓ 3. Valid Machine ID");
+        else setP("rpHwid", "err", "✕ 3. Check Machine ID");
+        if (pv) { sc += 33; setP("rpPriv", "ok", "✓ 4. Privacy Consent"); } else setP("rpPriv", "", "4. RA 10173 Consent");
+        document.getElementById("readyFill").style.width = sc + "%";
+        const p = document.getElementById("readyPct");
+        p.textContent = sc === 100 ? "100% Ready ✓" : sc + "% Complete";
+        p.style.color = sc === 100 ? "#34d399" : "#fbbf24";
+      }
+      nameEl.addEventListener("input", () => {
+        const v = nameEl.value.trim();
+        if (!v) setState(nameEl, "hintName", "", "Appears on your personal license receipt.");
+        else if (v.length < 3) setState(nameEl, "hintName", "err", "✕ Enter at least 3 characters.");
+        else setState(nameEl, "hintName", "ok", "✓ Name format looks good.");
+        updateReady();
       });
+      contactEl.addEventListener("input", () => {
+        const v = contactEl.value.trim();
+        if (!v) setState(contactEl, "hintContact", "", "Email, Discord @handle, or FB profile name.");
+        else if (v.length < 3) setState(contactEl, "hintContact", "err", "✕ Contact is too short.");
+        else if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) setState(contactEl, "hintContact", "ok", "✓ Valid Email detected.");
+        else if (v.startsWith("@")) setState(contactEl, "hintContact", "ok", "✓ Discord handle detected.");
+        else setState(contactEl, "hintContact", "ok", "✓ Contact handle ready.");
+        updateReady();
+      });
+      hwidEl.addEventListener("input", () => {
+        const c = hwidEl.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+        if (hwidEl.value !== c) hwidEl.value = c;
+        if (!c) setState(hwidEl, "hintHwid", "", "Optional for pre-order. Auto-formats ZGE-XXXX-XXXX-XXXX.");
+        else if (HWID_RE.test(c)) setState(hwidEl, "hintHwid", "ok", "✓ Valid 5-factor Machine ID!");
+        else setState(hwidEl, "hintHwid", "err", "✕ Expected ZGE-XXXX-XXXX-XXXX (hex 0-9, A-F).");
+        updateReady();
+      });
+      notesEl.addEventListener("input", () => {
+        if (/(password|passwd|pin\b|otp|cvv|mpin)/i.test(notesEl.value)) setState(notesEl, "hintNotes", "warn", "⚠ Never type any password, PIN, or OTP here!");
+        else setState(notesEl, "hintNotes", "", "Zero-Password Policy: We never ask for passwords, PINs, or payment screenshots here.");
+      });
+      privEl.addEventListener("change", updateReady);
+      updateReady();
+    })();
+
+    // === 6. API WIRING (INQUIRY, TRACKER, KEY VERIFIER, 24/7 BOT) ===
+    if (CONFIG.TURNSTILE_SITE_KEY && document.getElementById("turnstileMount")) {
+      const d = document.createElement("div"); d.className = "cf-turnstile"; d.setAttribute("data-sitekey", CONFIG.TURNSTILE_SITE_KEY); d.setAttribute("data-theme", "dark");
+      document.getElementById("turnstileMount").appendChild(d);
+      const sc = document.createElement("script"); sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"; sc.async = true; sc.defer = true; document.head.appendChild(sc);
+    }
+
+    document.getElementById("inquiryForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const btn = document.getElementById("inqBtn"), box = document.getElementById("inqResultBox");
+      btn.disabled = true; btn.textContent = "Submitting..."; box.style.display = "block"; box.textContent = "Registering inquiry...";
+      try {
+        const tsInput = document.querySelector('input[name="cf-turnstile-response"]');
+        const r = await fetch(CONFIG.WORKER_URL + "/api/v1/public/inquiry", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            client_name: document.getElementById("inqName").value.trim(),
+            contact_info: document.getElementById("inqContact").value.trim(),
+            cad_version: document.getElementById("inqCad").value,
+            plan_tier: document.getElementById("inqTier").value,
+            payment_method: document.getElementById("inqPay").value,
+            hwid_submitted: document.getElementById("inqHwid").value.trim().toUpperCase(),
+            notes: document.getElementById("inqNotes").value.trim(),
+            website_hp: document.getElementById("inqHp").value,
+            cf_turnstile_token: tsInput ? tsInput.value : ""
+          })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || "Submission failed.");
+        box.innerHTML = '<strong style="color:#34d399;">Registered! Code: <code>' + d.ref_code + '</code></strong><br><span style="color:#94a3b8;">Track it anytime under Verify &amp; Track.</span>';
+        zgeToast("Inquiry " + d.ref_code + " registered!");
+        e.target.reset();
+      } catch (err) { box.innerHTML = '<strong style="color:#fb7185;">Error:</strong> ' + (err.message || "Network error."); }
+      finally { btn.disabled = false; btn.textContent = "Submit Inquiry & Get Reference Code"; }
+    });
+
+    document.getElementById("trackForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const ref = document.getElementById("trkRef").value.trim().toUpperCase(), box = document.getElementById("trkResultBox");
+      box.style.display = "block"; box.textContent = "Checking " + ref + "...";
+      try {
+        const r = await fetch(CONFIG.WORKER_URL + "/api/v1/public/track-inquiry?ref=" + encodeURIComponent(ref));
+        const d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || "Code not found.");
+        const stg = Number(d.progress_stage || 1);
+        let bars = ""; for (let i = 1; i <= 5; i++) bars += '<div class="s-bar' + (i <= stg ? " done" : "") + '"></div>';
+        box.innerHTML = '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;"><strong style="color:#34d399;">' + d.ref_code + ' &bull; ' + d.status + '</strong><span style="font-family:var(--mono);font-size:0.74rem;color:#fbbf24;">Stage ' + stg + '/5</span></div><div class="stage-bars">' + bars + '</div><div style="font-size:0.8rem;color:#94a3b8;">' + (d.status_note || "Queued for review.") + '</div>';
+      } catch (err) { box.innerHTML = '<strong style="color:#fb7185;">Error:</strong> ' + (err.message || "Lookup failed."); }
+    });
+
+    document.getElementById("verifyKeyForm").addEventListener("submit", async e => {
+      e.preventDefault();
+      const key = document.getElementById("verKeyInput").value.trim().toUpperCase(), box = document.getElementById("verKeyBox");
+      box.style.display = "block";
+      if (CONFIG.PUBLIC_TESTING_MODE) {
+        box.innerHTML = '<strong style="color:#fbbf24;">Pre-Launch Testing Mode:</strong> Public cloud key verification activates on December launch. Your offline <code>Z6-...</code> key already verifies locally inside AutoCAD.';
+        return;
+      }
+      box.textContent = "Verifying key...";
+      try {
+        const r = await fetch(CONFIG.WORKER_URL + "/api/v1/public/check-license", {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ license_key: key })
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || "Key not registered.");
+        box.innerHTML = '<strong style="color:#34d399;">Verified Active License</strong><br><span style="color:#94a3b8;">Holder: ' + d.client_name + ' &bull; Tier: ' + d.tier + ' &bull; Status: ' + d.status + '</span>';
+      } catch (err) { box.innerHTML = '<strong style="color:#fb7185;">Not Verified:</strong> ' + (err.message || "Lookup failed."); }
+    });
+
+    (function initBot() {
+      const tgl = document.getElementById("zgeBotToggle"), pnl = document.getElementById("zgeBotPanel");
+      tgl.addEventListener("click", () => { pnl.style.display = pnl.style.display === "block" ? "none" : "block"; });
       window.botReply = function(topic) {
         const box = document.getElementById("botMessages");
-        const answers = {
-          compat: "Works on any existing Windows installation of full AutoCAD or Civil 3D (2013 to 2026+), 100% offline after activation — compatible with both licensed and offline/firewall-blocked workstations. (Autodesk installer not included.)",
-          student: "Yes! BSGE students and multi-seat survey firms (3+ seats) qualify for special discounted tiers. Fill out the quick Offer Ticket below with your role and seat count, and the developer will reply with your tailored quote.",
-          hwid: "Go to the Inquiry Form tab above and click 'Download GET_ZGE_MACHINE_ID.bat'. You can inspect its full 100% read-only source code first before running it on your AutoCAD PC.",
-          safe: "100% offline CAD processing — your DWG/TCT files never leave your PC. Official Policy (Seal ZGE-PH-2026): We NEVER ask for passwords, PINs, OTPs, card details, or Autodesk logins."
+        const ans = {
+          compat: "Works on any existing Windows full AutoCAD or Civil 3D (2013–2026+), 100% offline after activation.",
+          pricing: "1-Year Standard is ₱2,500/yr (1 PC), Pro Perpetual Lifetime is ₱5,000 one-time (1 PC). For multi-PC firms or student/special inquiries, send an Offer Ticket below for direct developer review.",
+          hwid: "Click 'Verify & Track' in the top bar to inspect the full read-only source code and download GET_ZGE_MACHINE_ID.bat.",
+          safe: "100% offline CAD engine — your DWG files never leave your PC. Seal ZGE-PH-2026: Zero-Password / Zero-PIN policy."
         };
-        const msg = document.createElement("div");
-        msg.style.marginTop = "7px";
-        msg.style.color = "#e2e8f0";
-        msg.innerHTML = "<strong style='color:#34d399;'>ZGE Bot:</strong> " + (answers[topic] || "");
-        box.appendChild(msg);
-        box.scrollTop = box.scrollHeight;
+        const div = document.createElement("div"); div.style.marginTop = "7px";
+        div.innerHTML = '<strong style="color:#34d399;">ZGE Bot:</strong> ' + (ans[topic] || "");
+        box.appendChild(div); box.scrollTop = box.scrollHeight;
       };
-      const form = document.getElementById("botOfferForm");
-      form.addEventListener("submit", async (e) => {
+      document.getElementById("botOfferForm").addEventListener("submit", async e => {
         e.preventDefault();
-        const btn = document.getElementById("botOfferBtn");
-        const resEl = document.getElementById("botOfferRes");
-        btn.disabled = true; btn.textContent = "Sending offer...";
-        resEl.style.display = "block"; resEl.textContent = "Logging offer ticket...";
+        const btn = document.getElementById("botOfferBtn"), res = document.getElementById("botOfferRes");
+        btn.disabled = true; btn.textContent = "Sending..."; res.style.display = "block"; res.textContent = "Logging offer...";
         try {
           const r = await fetch(CONFIG.WORKER_URL + "/api/v1/public/negotiate", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
+            method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               client_name: document.getElementById("botName").value.trim(),
               contact_info: document.getElementById("botContact").value.trim(),
@@ -1078,70 +1069,12 @@
           });
           const d = await r.json();
           if (!r.ok || !d.ok) throw new Error(d.error || "Could not submit offer.");
-          resEl.style.background = "#052e16"; resEl.style.color = "#a7f3d0";
-          resEl.textContent = d.message;
-          form.reset();
-        } catch (err) {
-          resEl.style.background = "#450a0a"; resEl.style.color = "#fecaca";
-          resEl.textContent = err.message || "Network error. Please message Discord/FB directly.";
-        } finally {
-          btn.disabled = false; btn.textContent = "Send Offer Ticket to Developer";
-        }
+          res.innerHTML = '<strong style="color:#34d399;">' + d.message + '</strong>';
+          zgeToast("Offer " + d.offer_code + " logged!"); e.target.reset();
+        } catch (err) { res.innerHTML = '<strong style="color:#fb7185;">Error:</strong> ' + (err.message || "Network error."); }
+        finally { btn.disabled = false; btn.textContent = "Send Offer Ticket"; }
       });
     })();
-
-</script>
-
-  <!-- 24/7 Automated Pre-Sales & Negotiation Assistant (Zero-Cost Client + Worker Offer Ticket) -->
-  <button id="zgeBotToggle" type="button" aria-label="Open 24/7 ZGE Assistant & Offer Bot"
-    style="position:fixed;right:20px;bottom:20px;z-index:9990;background:linear-gradient(135deg,#059669,#0f766e);color:#fff;border:1px solid #34d399;border-radius:999px;padding:11px 16px;font-family:var(--mono);font-size:0.78rem;font-weight:700;cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,0.45);">
-    24/7 Assistant &amp; Offer Bot
-  </button>
-
-  <aside id="zgeBotPanel" aria-label="ZGE 24/7 Assistant"
-    style="display:none;position:fixed;right:20px;bottom:74px;z-index:9991;width:min(365px,calc(100vw - 28px));max-height:78vh;overflow-y:auto;background:#090f1a;border:1px solid #1f3349;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.65);color:#e2e8f0;font-family:var(--sans);">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 14px;background:#0d1829;border-bottom:1px solid #1f3349;border-radius:14px 14px 0 0;">
-      <div>
-        <div style="font-weight:700;font-size:0.9rem;color:#34d399;">ZGE 24/7 Buyer Assistant</div>
-        <div style="font-size:0.72rem;color:#94a3b8;">Auto-answers &amp; Offer Negotiation while dev is away</div>
-      </div>
-      <button type="button" onclick="document.getElementById('zgeBotPanel').style.display='none'"
-        style="background:transparent;border:none;color:#94a3b8;font-size:1.1rem;cursor:pointer;">&times;</button>
-    </div>
-    <div style="padding:12px 14px;">
-      <div id="botMessages" style="background:#050912;border:1px solid #172538;border-radius:8px;padding:10px;font-size:0.8rem;line-height:1.48;min-height:92px;max-height:165px;overflow-y:auto;margin-bottom:10px;">
-        <div style="color:#a7f3d0;"><strong>ZGE Bot:</strong> Hi! Ask me anything below, or submit a student / solo / group offer — I will log it with an <code>OFFER-XXXXXX</code> code and notify the developer immediately!</div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
-        <button type="button" class="bot-chip" onclick="botReply('compat')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">AutoCAD / Civil 3D?</button>
-        <button type="button" class="bot-chip" onclick="botReply('student')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">Student / Group Discount</button>
-        <button type="button" class="bot-chip" onclick="botReply('hwid')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">How to get Machine ID?</button>
-        <button type="button" class="bot-chip" onclick="botReply('safe')" style="background:#111f33;color:#cbd5e1;border:1px solid #243b55;border-radius:6px;padding:5px 8px;font-size:0.72rem;cursor:pointer;">Is it safe / offline?</button>
-      </div>
-      <form id="botOfferForm" style="border-top:1px solid #1f3349;padding-top:10px;display:flex;flex-direction:column;gap:7px;">
-        <div style="font-size:0.76rem;font-weight:700;color:#fbbf24;">Submit a Custom Offer / Negotiation Ticket</div>
-        <input id="botName" type="text" placeholder="Your Name" required style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
-        <input id="botContact" type="text" placeholder="FB Name / Discord @handle / Email" required style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
-        <div style="display:grid;grid-template-columns:1fr 78px;gap:6px;">
-          <select id="botRole" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 8px;font-size:0.78rem;">
-            <option value="BSGE Student">BSGE Student</option>
-            <option value="Solo Practicing GE">Solo Practicing GE</option>
-            <option value="Survey Firm / Group">Survey Firm / 3+ Seats</option>
-          </select>
-          <input id="botSeats" type="number" min="1" max="50" value="1" title="Seats" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 8px;font-size:0.78rem;">
-        </div>
-        <input id="botBudget" type="text" placeholder="Target Budget or Request (e.g., Student rate / 3-seat bundle)" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
-        <input id="botMsg" type="text" placeholder="Short note (optional)" style="background:#050912;color:#f1f5f9;border:1px solid #243b55;border-radius:6px;padding:7px 9px;font-size:0.78rem;">
-        <input id="botHp" type="text" tabindex="-1" autocomplete="off" style="display:none;">
-        <label style="display:flex;align-items:flex-start;gap:6px;font-size:0.7rem;color:#94a3b8;cursor:pointer;">
-          <input id="botPrivacy" type="checkbox" required style="margin-top:2px;accent-color:#10b981;">
-          <span>I consent under PH RA 10173 to log my contact &amp; offer request for developer reply only.</span>
-        </label>
-        <button id="botOfferBtn" type="submit" style="background:#059669;color:#fff;border:none;border-radius:7px;padding:8px 10px;font-weight:700;font-size:0.78rem;cursor:pointer;">Send Offer Ticket to Developer</button>
-        <div id="botOfferRes" style="display:none;font-size:0.75rem;color:#a7f3d0;padding:6px 8px;background:#052e16;border-radius:6px;"></div>
-      </form>
-    </div>
-  </aside>
-
+  </script>
 </body>
 </html>
