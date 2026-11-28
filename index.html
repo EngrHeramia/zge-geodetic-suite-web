@@ -304,6 +304,24 @@
       .feat-grid, .price-grid { grid-template-columns: minmax(0, 1fr); }
       .iso-wrap { height: 300px; }
     }
+      /* Phase 2 Flagship Polish: Mobile Sticky Bar + Reduced-Motion Safety */
+    .zge-mobile-bar { display: none; }
+    @media (max-width: 768px) {
+      body { padding-bottom: 66px; }
+      .zge-mobile-bar {
+        display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 90;
+        background: rgba(9, 13, 22, 0.94); backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(16, 185, 129, 0.28); padding: 10px 14px; gap: 10px;
+        justify-content: space-between; align-items: center;
+      }
+      .zge-mobile-bar a, .zge-mobile-bar button {
+        flex: 1; text-align: center; padding: 10px 12px; border-radius: 8px;
+        font-size: 0.78rem; font-weight: 700; text-decoration: none; cursor: pointer;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+    }
   </style>
 </head>
 <body>
@@ -480,6 +498,37 @@
   </section>
 
   <!-- 4. COMMERCIAL PRICING (1-YEAR STANDARD / LIFETIME PRO / MULTI-PC CUSTOM) -->
+    <!-- PHASE 2: COMPATIBILITY & TRANSPARENT LICENSE POLICY STRIP -->
+  <section class="dark-sec" style="padding:36px 0;border-top:1px solid var(--border-d);border-bottom:1px solid var(--border-d);">
+    <div class="container">
+      <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:18px;">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <span style="font-family:var(--mono);font-size:0.72rem;padding:5px 10px;border-radius:999px;background:rgba(16,185,129,0.12);border:1px solid rgba(16,185,129,0.35);color:#34d399;">AutoCAD 2013&ndash;2024</span>
+          <span style="font-family:var(--mono);font-size:0.72rem;padding:5px 10px;border-radius:999px;background:rgba(56,189,248,0.12);border:1px solid rgba(56,189,248,0.35);color:#38bdf8;">AutoCAD 2025&ndash;2026+</span>
+          <span style="font-family:var(--mono);font-size:0.72rem;padding:5px 10px;border-radius:999px;background:rgba(245,158,11,0.12);border:1px solid rgba(245,158,11,0.35);color:#fbbf24;">Civil 3D Ready</span>
+          <span style="font-family:var(--mono);font-size:0.72rem;padding:5px 10px;border-radius:999px;background:rgba(148,163,184,0.12);border:1px solid rgba(148,163,184,0.3);color:#e2e8f0;">100% Offline Field-Ready</span>
+        </div>
+        <div id="liveOfficialStatus" style="font-family:var(--mono);font-size:0.74rem;color:#94a3b8;">
+          <span style="color:#10b981;">&#9679;</span> Official Seal: <strong style="color:#34d399;">ZGE-PH-2026</strong> &bull; Checking live API...
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;">
+        <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border-d);border-radius:10px;padding:12px 14px;">
+          <div style="font-family:var(--mono);font-size:0.72rem;color:#34d399;font-weight:700;margin-bottom:4px;">01 &bull; ONE-TIME-USE LICENSE KEY</div>
+          <div style="font-size:0.8rem;color:#cbd5e1;line-height:1.45;">Every activation key locks permanently to 1 registered Windows PC (zero re-activation hassle, zero key sharing).</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border-d);border-radius:10px;padding:12px 14px;">
+          <div style="font-family:var(--mono);font-size:0.72rem;color:#38bdf8;font-weight:700;margin-bottom:4px;">02 &bull; FREE SAME-PC OS REFORMAT</div>
+          <div style="font-size:0.8rem;color:#cbd5e1;line-height:1.45;">Reformatted Windows on the same laptop? Verified via BoardTag for a free key re-issue keeping your exact original expiry date.</div>
+        </div>
+        <div style="background:rgba(15,23,42,0.75);border:1px solid var(--border-d);border-radius:10px;padding:12px 14px;">
+          <div style="font-family:var(--mono);font-size:0.72rem;color:#fbbf24;font-weight:700;margin-bottom:4px;">03 &bull; NEW LAPTOP TRANSFER &amp; ANTI-SCAM</div>
+          <div style="font-size:0.8rem;color:#cbd5e1;line-height:1.45;">Upgrading to a new laptop carries a small hardware transfer fee. Deal ONLY with our 3 official links below (never fake FB pages).</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <section id="pricing" class="light-sec">
     <div class="container">
       <div class="sec-head">
@@ -597,10 +646,13 @@
 
             <div class="fld-wrap">
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <input type="text" id="inqHwid" class="fld" style="flex:1;min-width:210px;" placeholder="Optional Machine ID (ZGE-XXXX-XXXX-XXXX)" maxlength="24" />
+                <input type="text" id="inqHwid" class="fld" style="flex:1;min-width:210px;" placeholder="Optional Signed Machine ID (ZGE-XXXX-XXXX-XXXX-BXXXX-PXXXX)" maxlength="38" />
                 <button type="button" id="dlHwidBatBtn" class="btn btn-dark-ghost btn-sm" style="color:var(--cyan);border-color:rgba(0,229,255,0.35);">Download Machine ID Finder (.bat)</button>
               </div>
-              <div id="hintHwid" class="fld-hint">Optional for pre-order. Auto-formats ZGE-XXXX-XXXX-XXXX (hex 0&ndash;9, A&ndash;F).</div>
+              <div id="hintHwid" class="fld-hint">Optional for pre-order. Supports Signed Proof Code + BoardTag from GET_ZGE_MACHINE_ID.bat.</div>
+              <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <button type="button" id="copyPcStepsBtn" class="btn btn-dark-ghost btn-sm" style="font-size:0.74rem;padding:6px 10px;">On Phone? Copy Official Link &amp; PC Checklist</button>
+              </div>
             </div>
 
             <input type="text" id="inqHp" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;opacity:0;height:0;width:0;" />
@@ -614,6 +666,17 @@
               <input id="inqPrivacy" type="checkbox" required style="margin-top:3px;accent-color:#10b981;" />
               <span><strong>RA 10173 Privacy Consent:</strong> I consent to ZGE storing my contact and optional Machine ID solely for license delivery and support.</span>
             </label>
+
+                        <div id="otpVerifyBox" style="background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.28);border-radius:10px;padding:10px 12px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+                <span style="font-family:var(--mono);font-size:0.72rem;color:#34d399;font-weight:700;">ANTI-SPAM EMAIL VERIFICATION (6-DIGIT CODE)</span>
+                <button type="button" id="sendOtpBtn" class="btn btn-dark-ghost btn-sm" style="padding:5px 10px;font-size:0.74rem;color:#34d399;border-color:rgba(16,185,129,0.4);">Send 6-Digit Email Code</button>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <input type="text" id="inqOtp" class="fld" style="max-width:220px;font-family:var(--mono);letter-spacing:2px;" placeholder="6-digit OTP code" maxlength="6" inputmode="numeric" />
+                <span id="otpHint" style="font-size:0.74rem;color:#94a3b8;">Enter your real Gmail/work email above, then click Send Code.</span>
+              </div>
+            </div>
 
             <div id="turnstileMount"></div>
             <button type="submit" id="inqBtn" class="btn btn-primary">Submit Inquiry &amp; Get Reference Code</button>
@@ -674,6 +737,17 @@
           </form>
           <div id="verKeyBox" class="res-box"></div>
         </div>
+
+        <div style="background:#080d16;border:1px solid var(--border-d);border-radius:12px;padding:16px;">
+          <div style="font-family:var(--mono);font-size:0.7rem;color:#34d399;font-weight:700;margin-bottom:6px;">PACKAGE SHA-256 AUTHENTICITY CHECK</div>
+          <p style="font-size:0.77rem;color:#94a3b8;margin:0 0 8px;">Every official Buyer ZIP includes <code>VERIFY_ZGE_OFFICIAL.bat</code> and <code>ZGE_MANIFEST.sha256</code>. Paste two SHA-256 hashes below to confirm zero tampering:</p>
+          <div style="display:grid;gap:7px;">
+            <input type="text" id="shaExp" class="fld" style="font-family:var(--mono);font-size:0.74rem;" placeholder="Official SHA-256 (from Receipt / #announcements)" />
+            <input type="text" id="shaAct" class="fld" style="font-family:var(--mono);font-size:0.74rem;" placeholder="Actual SHA-256 (from VERIFY_ZGE_OFFICIAL.bat / certutil)" />
+            <div id="shaMatchOut" style="font-family:var(--mono);font-size:0.75rem;color:#94a3b8;min-height:18px;">Paste both 64-char SHA-256 hashes to compare instantaneously.</div>
+          </div>
+        </div>
+
 
         <div style="background:#080d16;border:1px solid var(--border-d);border-radius:12px;padding:16px;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -761,7 +835,7 @@
       PUBLIC_TESTING_MODE: true,
       TURNSTILE_SITE_KEY: ""
     };
-    const HWID_BAT_SCRIPT = "@echo off\r\nsetlocal\r\ntitle ZGE Geodetic Suite v7.7 Smart Pro - Standalone Machine ID Finder (No AutoCAD Needed)\r\nset \"ZGE_HWID=\"\r\n\r\n:: Primary: PowerShell 64-bit/native (zero temp file drops; works on Windows 10 & Windows 11 24H2+)\r\nfor /f \"usebackq delims=\" %%H in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^\r\n  \"$ErrorActionPreference='SilentlyContinue';\" ^\r\n  \"function Mix16([string]$s,[int]$seed){$h=[Math]::Abs($seed)%%65521;for($i=1;$i -le $s.Length;$i++){$ch=[int][char]$s[$i-1];$h=(($h*137)+($ch*29)+($i*19)+7)%%65521};(($h*251)+($seed%%997)+13)%%65521}\" ^\r\n  \"function Hex4([int]$n){'{0:X4}' -f ([Math]::Abs($n)%%65536)}\" ^\r\n  \"function SafeReg([string]$p,[string]$n,[string]$fb){$v=(Get-ItemProperty -Path $p -Name $n -ErrorAction SilentlyContinue).$n;if([string]::IsNullOrEmpty($v)){$fb}else{[string]$v}}\" ^\r\n  \"$vol='00000000';try{$fso=New-Object -ComObject Scripting.FileSystemObject;$vol=[string]([int32]$fso.GetDrive('C:').SerialNumber)}catch{}\" ^\r\n  \"$mguid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' 'MachineGuid' 'NOGUID';\" ^\r\n  \"$cname=if($env:COMPUTERNAME){$env:COMPUTERNAME}else{'UNKNOWN'};\" ^\r\n  \"$board=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\BIOS' 'BaseBoardProduct' 'NOBRD';\" ^\r\n  \"$cpu=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0' 'ProcessorNameString' 'NOCPU';\" ^\r\n  \"$pid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion' 'ProductId' 'NOPID';\" ^\r\n  \"$raw=('ZGE7HW|'+$vol+'|'+$mguid+'|'+$cname+'|'+$board+'|'+$cpu+'|'+$pid).ToUpper();\" ^\r\n  \"'ZGE-'+$(Hex4 (Mix16 $raw 5381))+'-'+$(Hex4 (Mix16 $raw 31337))+'-'+$(Hex4 (Mix16 $raw 49157))\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n\r\n:: Fallback: VBScript (for older Windows 7/8 or locked PowerShell policies)\r\nif not defined ZGE_HWID (\r\n  set \"TMPVBS=%TEMP%\\zge_hwid_check_%RANDOM%.vbs\"\r\n  > \"%TMPVBS%\" (\r\n    echo Option Explicit\r\n    echo Function Mix16^(s, seed^)\r\n    echo   Dim h, i, ch\r\n    echo   h = Abs^(seed^) Mod 65521\r\n    echo   For i = 1 To Len^(s^)\r\n    echo     ch = Asc^(Mid^(s, i, 1^)^)\r\n    echo     h = ^(^(h * 137^) + ^(ch * 29^) + ^(i * 19^) + 7^) Mod 65521\r\n    echo   Next\r\n    echo   h = ^(^(h * 251^) + ^(seed Mod 997^) + 13^) Mod 65521\r\n    echo   Mix16 = h\r\n    echo End Function\r\n    echo Function Hex4^(n^)\r\n    echo   Dim s\r\n    echo   s = Hex^(Abs^(Int^(n^)^) Mod 65536^)\r\n    echo   Do While Len^(s^) ^< 4 : s = \"0\" ^& s : Loop\r\n    echo   Hex4 = UCase^(s^)\r\n    echo End Function\r\n    echo Function SafeReg^(wsh, path, fallback^)\r\n    echo   On Error Resume Next\r\n    echo   Dim v : v = wsh.RegRead^(path^)\r\n    echo   If Err.Number ^<^> 0 Or IsEmpty^(v^) Or Len^(CStr^(v^)^) = 0 Then\r\n    echo     Err.Clear : SafeReg = fallback\r\n    echo   Else\r\n    echo     SafeReg = CStr^(v^)\r\n    echo   End If\r\n    echo   On Error GoTo 0\r\n    echo End Function\r\n    echo Dim fso, drv, wsh, vol, mguid, cname, board, cpu, pid, raw\r\n    echo vol = \"00000000\"\r\n    echo On Error Resume Next\r\n    echo Set fso = CreateObject^(\"Scripting.FileSystemObject\"^)\r\n    echo If Not fso Is Nothing Then Set drv = fso.GetDrive^(\"C:\"^) : vol = CStr^(CLng^(drv.SerialNumber^)^)\r\n    echo Err.Clear\r\n    echo Set wsh = CreateObject^(\"WScript.Shell\"^)\r\n    echo mguid = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid\", \"NOGUID\"^)\r\n    echo cname = wsh.ExpandEnvironmentStrings^(\"%%COMPUTERNAME%%\"^)\r\n    echo If Err.Number ^<^> 0 Or cname = \"%%COMPUTERNAME%%\" Then cname = \"UNKNOWN\" : Err.Clear\r\n    echo board = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS\\BaseBoardProduct\", \"NOBRD\"^)\r\n    echo cpu   = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0\\ProcessorNameString\", \"NOCPU\"^)\r\n    echo pid   = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProductId\", \"NOPID\"^)\r\n    echo On Error GoTo 0\r\n    echo raw = UCase^(\"ZGE7HW|\" ^& vol ^& \"|\" ^& mguid ^& \"|\" ^& cname ^& \"|\" ^& board ^& \"|\" ^& cpu ^& \"|\" ^& pid^)\r\n    echo WScript.Echo \"ZGE-\" ^& Hex4^(Mix16^(raw, 5381^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 31337^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 49157^)^)\r\n  )\r\n  for /f \"usebackq delims=\" %%H in (`cscript //nologo \"%TMPVBS%\" 2^>nul`) do set \"ZGE_HWID=%%H\"\r\n  del /f /q \"%TMPVBS%\" >nul 2>&1\r\n)\r\n\r\necho.\r\necho ========================================================================\r\necho   ZGE COMPLETE GEODETIC ^& GIS SUITE v7.7 SMART PRO \u2014 MACHINE ID\r\necho   (Zero AutoCAD Needed ^| Exact 5-Factor Read-Only Hardware Fingerprint)\r\necho ========================================================================\r\necho.\r\nif not defined ZGE_HWID (\r\n  echo   [ERROR] Could not read Machine ID due to Windows policy restrictions.\r\n  echo   Alternative: Open AutoCAD, install ZGE_Suite, and type ZGEACT to view\r\n  echo   your Machine ID directly inside AutoCAD.\r\n  echo ========================================================================\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\necho   YOUR MACHINE ID :  %ZGE_HWID%\r\necho.\r\necho ========================================================================\r\necho %ZGE_HWID%| clip >nul 2>&1\r\necho   [COPIED] Automatically copied to your clipboard!\r\necho   Paste this Machine ID into the ZGE Website Inquiry Form or send it\r\necho   to official ZGE Support (Discord / Facebook).\r\necho ========================================================================\r\necho.\r\npause\r\n";
+    const HWID_BAT_SCRIPT = "@echo off\r\nsetlocal\r\ntitle ZGE Geodetic Suite v7.7 Smart Pro - Signed Machine ID & BoardTag Finder\r\nset \"ZGE_HWID=\"\r\nset \"ZGE_BOARD=\"\r\nset \"ZGE_PROOF=\"\r\n\r\n:: Primary: PowerShell 64-bit/native (zero temp file drops; works on Windows 10 & Windows 11 24H2+)\r\nfor /f \"usebackq tokens=1,2,3 delims=|\" %%A in (`powershell -NoProfile -ExecutionPolicy Bypass -Command ^\r\n  \"$ErrorActionPreference='SilentlyContinue';\" ^\r\n  \"function Mix16([string]$s,[int]$seed){$h=[Math]::Abs($seed)%%65521;for($i=1;$i -le $s.Length;$i++){$ch=[int][char]$s[$i-1];$h=(($h*137)+($ch*29)+($i*19)+7)%%65521};(($h*251)+($seed%%997)+13)%%65521}\" ^\r\n  \"function Hex4([int]$n){'{0:X4}' -f ([Math]::Abs($n)%%65536)}\" ^\r\n  \"function SafeReg([string]$p,[string]$n,[string]$fb){$v=(Get-ItemProperty -Path $p -Name $n -ErrorAction SilentlyContinue).$n;if([string]::IsNullOrEmpty($v)){$fb}else{[string]$v}}\" ^\r\n  \"$vol='00000000';try{$fso=New-Object -ComObject Scripting.FileSystemObject;$vol=[string]([int32]$fso.GetDrive('C:').SerialNumber)}catch{}\" ^\r\n  \"$mguid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Cryptography' 'MachineGuid' 'NOGUID';\" ^\r\n  \"$cname=if($env:COMPUTERNAME){$env:COMPUTERNAME}else{'UNKNOWN'};\" ^\r\n  \"$board=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\BIOS' 'BaseBoardProduct' 'NOBRD';\" ^\r\n  \"$cpu=SafeReg 'HKLM:\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0' 'ProcessorNameString' 'NOCPU';\" ^\r\n  \"$pid=SafeReg 'HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion' 'ProductId' 'NOPID';\" ^\r\n  \"$raw=('ZGE7HW|'+$vol+'|'+$mguid+'|'+$cname+'|'+$board+'|'+$cpu+'|'+$pid).ToUpper();\" ^\r\n  \"$hwid='ZGE-'+$(Hex4 (Mix16 $raw 5381))+'-'+$(Hex4 (Mix16 $raw 31337))+'-'+$(Hex4 (Mix16 $raw 49157));\" ^\r\n  \"$braw=('ZGE7BRD|'+$board+'|'+$cpu).ToUpper();\" ^\r\n  \"$btag='B'+$(Hex4 (Mix16 $braw 41233));\" ^\r\n  \"$praw=('ZGE7PRF|'+$hwid+'|'+$btag+'|ZGE-PH-2026').ToUpper();\" ^\r\n  \"$ptag='P'+$(Hex4 (Mix16 $praw 61991));\" ^\r\n  \"$hwid+'|'+$btag+'|'+$hwid+'-'+$btag+'-'+$ptag\" 2^>nul`) do (\r\n    set \"ZGE_HWID=%%A\"\r\n    set \"ZGE_BOARD=%%B\"\r\n    set \"ZGE_PROOF=%%C\"\r\n)\r\n\r\n:: Fallback: VBScript (for older Windows 7/8 or locked PowerShell policies)\r\nif not defined ZGE_HWID (\r\n  set \"TMPVBS=%TEMP%\\zge_hwid_check_%RANDOM%.vbs\"\r\n  > \"%TMPVBS%\" (\r\n    echo Option Explicit\r\n    echo Function Mix16^(s, seed^)\r\n    echo   Dim h, i, ch\r\n    echo   h = Abs^(seed^) Mod 65521\r\n    echo   For i = 1 To Len^(s^)\r\n    echo     ch = Asc^(Mid^(s, i, 1^)^)\r\n    echo     h = ^(^(h * 137^) + ^(ch * 29^) + ^(i * 19^) + 7^) Mod 65521\r\n    echo   Next\r\n    echo   h = ^(^(h * 251^) + ^(seed Mod 997^) + 13^) Mod 65521\r\n    echo   Mix16 = h\r\n    echo End Function\r\n    echo Function Hex4^(n^)\r\n    echo   Dim s\r\n    echo   s = Hex^(Abs^(Int^(n^)^) Mod 65536^)\r\n    echo   Do While Len^(s^) ^< 4 : s = \"0\" ^& s : Loop\r\n    echo   Hex4 = UCase^(s^)\r\n    echo End Function\r\n    echo Function SafeReg^(wsh, path, fallback^)\r\n    echo   On Error Resume Next\r\n    echo   Dim v : v = wsh.RegRead^(path^)\r\n    echo   If Err.Number ^<^> 0 Or IsEmpty^(v^) Or Len^(CStr^(v^)^) = 0 Then\r\n    echo     Err.Clear : SafeReg = fallback\r\n    echo   Else\r\n    echo     SafeReg = CStr^(v^)\r\n    echo   End If\r\n    echo   On Error GoTo 0\r\n    echo End Function\r\n    echo Dim fso, drv, wsh, vol, mguid, cname, board, cpu, pid, raw, hwid, braw, btag, praw, ptag\r\n    echo vol = \"00000000\"\r\n    echo On Error Resume Next\r\n    echo Set fso = CreateObject^(\"Scripting.FileSystemObject\"^)\r\n    echo If Not fso Is Nothing Then Set drv = fso.GetDrive^(\"C:\"^) : vol = CStr^(CLng^(drv.SerialNumber^)^)\r\n    echo Err.Clear\r\n    echo Set wsh = CreateObject^(\"WScript.Shell\"^)\r\n    echo mguid = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Cryptography\\MachineGuid\", \"NOGUID\"^)\r\n    echo cname = wsh.ExpandEnvironmentStrings^(\"%%COMPUTERNAME%%\"^)\r\n    echo If Err.Number ^<^> 0 Or cname = \"%%COMPUTERNAME%%\" Then cname = \"UNKNOWN\" : Err.Clear\r\n    echo board = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\BIOS\\BaseBoardProduct\", \"NOBRD\"^)\r\n    echo cpu   = SafeReg^(wsh, \"HKLM\\HARDWARE\\DESCRIPTION\\System\\CentralProcessor\\0\\ProcessorNameString\", \"NOCPU\"^)\r\n    echo pid   = SafeReg^(wsh, \"HKLM\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion\\ProductId\", \"NOPID\"^)\r\n    echo On Error GoTo 0\r\n    echo raw = UCase^(\"ZGE7HW|\" ^& vol ^& \"|\" ^& mguid ^& \"|\" ^& cname ^& \"|\" ^& board ^& \"|\" ^& cpu ^& \"|\" ^& pid^)\r\n    echo hwid = \"ZGE-\" ^& Hex4^(Mix16^(raw, 5381^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 31337^)^) ^& \"-\" ^& Hex4^(Mix16^(raw, 49157^)^)\r\n    echo braw = UCase^(\"ZGE7BRD|\" ^& board ^& \"|\" ^& cpu^)\r\n    echo btag = \"B\" ^& Hex4^(Mix16^(braw, 41233^)^)\r\n    echo praw = UCase^(\"ZGE7PRF|\" ^& hwid ^& \"|\" ^& btag ^& \"|ZGE-PH-2026\"^)\r\n    echo ptag = \"P\" ^& Hex4^(Mix16^(praw, 61991^)^)\r\n    echo WScript.Echo hwid ^& \"|\" ^& btag ^& \"|\" ^& hwid ^& \"-\" ^& btag ^& \"-\" ^& ptag\r\n  )\r\n  for /f \"usebackq tokens=1,2,3 delims=|\" %%A in (`cscript //nologo \"%TMPVBS%\" 2^>nul`) do (\r\n    set \"ZGE_HWID=%%A\"\r\n    set \"ZGE_BOARD=%%B\"\r\n    set \"ZGE_PROOF=%%C\"\r\n  )\r\n  del /f /q \"%TMPVBS%\" >nul 2>&1\r\n)\r\n\r\necho.\r\necho ========================================================================\r\necho   ZGE COMPLETE GEODETIC ^& GIS SUITE v7.7 SMART PRO \u2014 SIGNED MACHINE ID\r\necho   (Zero AutoCAD Needed ^| Read-Only Hardware Fingerprint + BoardTag)\r\necho ========================================================================\r\necho.\r\nif not defined ZGE_HWID (\r\n  echo   [ERROR] Could not read Machine ID due to Windows policy restrictions.\r\n  echo   Alternative: Open AutoCAD, install ZGE_Suite, and type ZGEACT to view\r\n  echo   your Machine ID directly inside AutoCAD.\r\n  echo ========================================================================\r\n  echo.\r\n  pause\r\n  exit /b 1\r\n)\r\necho   MACHINE ID (AutoCAD) :  %ZGE_HWID%\r\necho   BOARD TAG (Reformat) :  %ZGE_BOARD%\r\necho   SIGNED PROOF CODE    :  %ZGE_PROOF%\r\necho.\r\necho ========================================================================\r\necho %ZGE_PROOF%| clip >nul 2>&1\r\necho   [COPIED] Signed Proof Code automatically copied to your clipboard!\r\necho   Paste it into the ZGE Website Inquiry Form or send to Official Support.\r\necho   Note: Keep your BoardTag for free same-PC OS reformat verification.\r\necho ========================================================================\r\necho.\r\npause\r\n";
 
     // === 1. MODALS, PLAN PICKER & SCROLL PROGRESS ===
     function openModal(id) { document.getElementById(id)?.classList.add("open"); }
@@ -883,15 +957,37 @@
           ctx.beginPath(); ctx.moveTo(0, mouse.y); ctx.lineTo(w, mouse.y); ctx.stroke();
           ctx.strokeRect(mouse.x - 5, mouse.y - 5, 10, 10);
         }
-        requestAnimationFrame(frame);
+        if (!document.hidden && _zgeCanvasVisible) {
+          requestAnimationFrame(frame);
+        } else {
+          _zgeCanvasPaused = true;
+        }
       }
-      requestAnimationFrame(frame);
+      let _zgeCanvasVisible = true, _zgeCanvasPaused = false;
+      function _zgeResumeCanvas() {
+        if (_zgeCanvasPaused && !document.hidden && _zgeCanvasVisible) {
+          _zgeCanvasPaused = false;
+          requestAnimationFrame(frame);
+        }
+      }
+      document.addEventListener("visibilitychange", _zgeResumeCanvas);
+      if (typeof IntersectionObserver !== "undefined") {
+        new IntersectionObserver(entries => {
+          _zgeCanvasVisible = Boolean(entries[0] && entries[0].isIntersecting);
+          _zgeResumeCanvas();
+        }, { threshold: 0.05 }).observe(canvas);
+      }
+      if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        requestAnimationFrame(frame);
+      } else {
+        frame(0);
+      }
     })();
 
     // === 4. SLIDER + BAT DOWNLOAD ===
     const lotSlider = document.getElementById("lotSlider");
     if (lotSlider) {
-      const upd = () => { const n = Number(lotSlider.value) || 1; document.getElementById("lotCountLbl").innerHTML = n + " lots/wk &rarr; " + (n * 2.4).toFixed(1) + " hrs saved/month"; };
+      const upd = () => { const n = Number(lotSlider.value) || 1; const hrs = (n * 2.4).toFixed(1); const payback = Math.max(1, Math.ceil(5 / Math.max(1, n))); document.getElementById("lotCountLbl").innerHTML = n + " lots/wk &rarr; " + hrs + " hrs saved/mo (ROI payback in ~" + payback + " wk" + (payback > 1 ? "s" : "") + ")"; };
       lotSlider.addEventListener("input", upd); upd();
     }
 
@@ -912,7 +1008,7 @@
       const nameEl = document.getElementById("inqName"), contactEl = document.getElementById("inqContact"),
             hwidEl = document.getElementById("inqHwid"), notesEl = document.getElementById("inqNotes"),
             privEl = document.getElementById("inqPrivacy");
-      const HWID_RE = /^ZGE-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}$/;
+      const HWID_RE = /^ZGE-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}(-B[0-9A-F]{4}-P[0-9A-F]{4})?$/;
       function setState(el, hid, st, msg) {
         const h = document.getElementById(hid);
         el.classList.remove("is-ok","is-err","is-warn"); h.classList.remove("ok","err","warn");
@@ -971,6 +1067,59 @@
       const d = document.createElement("div"); d.className = "cf-turnstile"; d.setAttribute("data-sitekey", CONFIG.TURNSTILE_SITE_KEY); d.setAttribute("data-theme", "dark");
       document.getElementById("turnstileMount").appendChild(d);
       const sc = document.createElement("script"); sc.src = "https://challenges.cloudflare.com/turnstile/v0/api.js"; sc.async = true; sc.defer = true; document.head.appendChild(sc);
+    }
+
+    const _zgePageLoadedAt = Date.now();
+    fetch(CONFIG.API_BASE + "/api/v1/public/status").then(r => r.json()).then(st => {
+      const el = document.getElementById("liveOfficialStatus");
+      if (!el || !st || !st.ok) return;
+      const shaBit = st.official_sha256 ? " &bull; SHA-256: " + st.official_sha256.slice(0, 12) + "..." : "";
+      const lockBit = st.lockdown_mode ? '<span style="color:#f59e0b;">&#9679; Maintenance Mode</span>' : '<span style="color:#10b981;">&#9679; API Online</span>';
+      el.innerHTML = lockBit + ' &bull; Latest: <strong style="color:#f8fafc;">v' + (st.latest_version || '7.7') + '</strong> &bull; Seal: <strong style="color:#34d399;">ZGE-PH-2026</strong>' + shaBit;
+    }).catch(() => {});
+
+    const copyPcBtn = document.getElementById("copyPcStepsBtn");
+    if (copyPcBtn) {
+      copyPcBtn.addEventListener("click", () => {
+        const txt = "ZGE Complete Geodetic & GIS Suite (Official Portal): https://zge-geodetic-suite-web.pages.dev\nPC Setup Checklist:\n1. Open link on your Windows AutoCAD PC\n2. Download & run GET_ZGE_MACHINE_ID.bat\n3. Paste your Signed Proof Code + submit Inquiry Form\nOfficial Seal: ZGE-PH-2026 | Discord: https://discord.gg/pfGNGcZVjW";
+        navigator.clipboard?.writeText(txt).then(() => zgeToast("Copied official link & PC checklist!")).catch(() => zgeToast("Open https://zge-geodetic-suite-web.pages.dev on your Windows PC."));
+      });
+    }
+
+    const sendOtpBtn = document.getElementById("sendOtpBtn");
+    if (sendOtpBtn) {
+      sendOtpBtn.addEventListener("click", async () => {
+        const contactVal = (document.getElementById("inqContact")?.value || "").trim();
+        const nameVal = (document.getElementById("inqName")?.value || "").trim();
+        const hint = document.getElementById("otpHint");
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(contactVal)) {
+          hint.style.color = "#fbbf24";
+          hint.textContent = "Please enter a valid email address in the Contact box first.";
+          return;
+        }
+        sendOtpBtn.disabled = true; sendOtpBtn.textContent = "Sending...";
+        try {
+          const tsInput = document.querySelector('input[name="cf-turnstile-response"]');
+          const resp = await fetch(CONFIG.API_BASE + "/api/v1/public/request-otp", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: contactVal,
+              client_name: nameVal || "Geodetic Engineer",
+              otp_code: (document.getElementById("inqOtp")?.value || "").trim(), form_elapsed_ms: Date.now() - _zgePageLoadedAt, website_hp: document.getElementById("inqHp")?.value || "",
+              cf_turnstile_token: tsInput ? tsInput.value : ""
+            })
+          });
+          const data = await resp.json();
+          hint.style.color = data.ok ? "#34d399" : "#f87171";
+          hint.textContent = data.message || data.error || "Check your email.";
+        } catch {
+          hint.style.color = "#f87171";
+          hint.textContent = "Could not reach verification server. Please try again.";
+        } finally {
+          sendOtpBtn.disabled = false; sendOtpBtn.textContent = "Send 6-Digit Email Code";
+        }
+      });
     }
 
     document.getElementById("inquiryForm").addEventListener("submit", async e => {
@@ -1075,6 +1224,27 @@
         finally { btn.disabled = false; btn.textContent = "Send Offer Ticket"; }
       });
     })();
-  </script>
+  
+    // Instant SHA-256 Hash Comparator in Verify & Track Modal
+    (function initShaCmp() {
+      const e1 = document.getElementById("shaExp"), e2 = document.getElementById("shaAct"), out = document.getElementById("shaMatchOut");
+      if (!e1 || !e2 || !out) return;
+      const cmp = () => {
+        const a = e1.value.trim().toLowerCase().replace(/\s+/g, "");
+        const b = e2.value.trim().toLowerCase().replace(/\s+/g, "");
+        if (!a || !b) { out.style.color = "#94a3b8"; out.textContent = "Paste both 64-char SHA-256 hashes to compare instantaneously."; return; }
+        if (!/^[0-9a-f]{64}$/.test(a) || !/^[0-9a-f]{64}$/.test(b)) { out.style.color = "#fbbf24"; out.textContent = "Waiting for valid 64-character hex SHA-256 strings..."; return; }
+        if (a === b) { out.style.color = "#34d399"; out.textContent = "✓ 100% EXACT SHA-256 MATCH — Authentic Official ZGE Package!"; }
+        else { out.style.color = "#fb7185"; out.textContent = "✕ SHA-256 MISMATCH — File was modified or unofficial! Do NOT install."; }
+      };
+      e1.addEventListener("input", cmp); e2.addEventListener("input", cmp);
+    })();
+
+</script>
+  <!-- MOBILE STICKY QUICK-ACTION BAR (PHONE-FIRST CONVERSION) -->
+  <div class="zge-mobile-bar" aria-label="Quick Actions">
+    <a href="#pricing" style="background:#10b981;color:#052e16;">View Pricing</a>
+    <button type="button" onclick="document.getElementById('copyPcStepsBtn')?.click()" style="background:rgba(15,23,42,0.9);color:#e2e8f0;border:1px solid rgba(56,189,248,0.4);">Copy PC Setup</button>
+  </div>
 </body>
 </html>
