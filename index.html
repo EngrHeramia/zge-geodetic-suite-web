@@ -306,6 +306,7 @@
     }
       /* Phase 2 Flagship Polish: Mobile Sticky Bar + Reduced-Motion Safety */
     .zge-mobile-bar { display: none; }
+    @media (min-width: 769px) { .zge-only-mobile { display: none !important; } }
     @media (max-width: 768px) {
       body { padding-bottom: 66px; }
       .zge-mobile-bar {
@@ -646,12 +647,13 @@
 
             <div class="fld-wrap">
               <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                <input type="text" id="inqHwid" class="fld" style="flex:1;min-width:210px;" placeholder="Optional Signed Machine ID (ZGE-XXXX-XXXX-XXXX-BXXXX-PXXXX)" maxlength="38" />
+                <input type="text" id="inqHwid" class="fld" style="flex:1;min-width:210px;" placeholder="Machine ID — Recommended for Faster Processing (ZGE-XXXX-XXXX-XXXX-...)" maxlength="38" />
                 <button type="button" id="dlHwidBatBtn" class="btn btn-dark-ghost btn-sm" style="color:var(--cyan);border-color:rgba(0,229,255,0.35);">Download Machine ID Finder (.bat)</button>
+                <button type="button" onclick="openModal('verifyModal')" class="btn btn-dark-ghost btn-sm" style="font-size:0.75rem;">Inspect Code</button>
               </div>
-              <div id="hintHwid" class="fld-hint">Optional for pre-order. Supports Signed Proof Code + BoardTag from GET_ZGE_MACHINE_ID.bat.</div>
+              <div id="hintHwid" class="fld-hint">Recommended for faster processing (required before license release). 100% read-only script — click Inspect Code to verify.</div>
               <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-                <button type="button" id="copyPcStepsBtn" class="btn btn-dark-ghost btn-sm" style="font-size:0.74rem;padding:6px 10px;">On Phone? Copy Official Link &amp; PC Checklist</button>
+                <button type="button" id="copyPcStepsBtn" class="btn btn-dark-ghost btn-sm zge-only-mobile" style="font-size:0.74rem;padding:6px 10px;">On Phone? Copy Official Link &amp; PC Checklist</button>
               </div>
             </div>
 
@@ -1110,12 +1112,13 @@
               cf_turnstile_token: tsInput ? tsInput.value : ""
             })
           });
-          const data = await resp.json();
+          const rawTxt = await resp.text();
+          let data = {}; try { data = JSON.parse(rawTxt); } catch {}
           hint.style.color = data.ok ? "#34d399" : "#f87171";
-          hint.textContent = data.message || data.error || "Check your email.";
-        } catch {
+          hint.textContent = data.message || data.error || ("Server returned HTTP " + resp.status + " — make sure latest worker.js is deployed.");
+        } catch (err) {
           hint.style.color = "#f87171";
-          hint.textContent = "Could not reach verification server. Please try again.";
+          hint.textContent = "Network/CORS error (" + (err && err.message ? err.message : "offline") + ") — verify latest worker.js is deployed.";
         } finally {
           sendOtpBtn.disabled = false; sendOtpBtn.textContent = "Send 6-Digit Email Code";
         }
@@ -1125,6 +1128,14 @@
     document.getElementById("inquiryForm").addEventListener("submit", async e => {
       e.preventDefault();
       const btn = document.getElementById("inqBtn"), box = document.getElementById("inqResultBox");
+      const _cVal = (document.getElementById("inqContact")?.value || "").trim();
+      const _otpVal = (document.getElementById("inqOtp")?.value || "").trim();
+      if (/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(_cVal) && !/^\d{6}$/.test(_otpVal)) {
+        box.style.display = "block";
+        box.style.color = "#fbbf24";
+        box.textContent = "Please click 'Send 6-Digit Email Code' and enter the 6-digit code sent to your email before submitting.";
+        return;
+      }
       btn.disabled = true; btn.textContent = "Submitting..."; box.style.display = "block"; box.textContent = "Registering inquiry...";
       try {
         const tsInput = document.querySelector('input[name="cf-turnstile-response"]');
