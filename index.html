@@ -1072,7 +1072,7 @@
     }
 
     const _zgePageLoadedAt = Date.now();
-    fetch(CONFIG.API_BASE + "/api/v1/public/status").then(r => r.json()).then(st => {
+    fetch(CONFIG.WORKER_URL + "/api/v1/public/status").then(r => r.json()).then(st => {
       const el = document.getElementById("liveOfficialStatus");
       if (!el || !st || !st.ok) return;
       const shaBit = st.official_sha256 ? " &bull; SHA-256: " + st.official_sha256.slice(0, 12) + "..." : "";
@@ -1102,7 +1102,7 @@
         sendOtpBtn.disabled = true; sendOtpBtn.textContent = "Sending...";
         try {
           const tsInput = document.querySelector('input[name="cf-turnstile-response"]');
-          const resp = await fetch(CONFIG.API_BASE + "/api/v1/public/request-otp", {
+          const resp = await fetch(CONFIG.WORKER_URL + "/api/v1/public/request-otp", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
